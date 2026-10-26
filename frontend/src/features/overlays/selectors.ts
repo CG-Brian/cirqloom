@@ -7,7 +7,7 @@
 // - Members get a thin role-coloured ring and a faint halo, only while that overlay is active.
 // - Selection adds a neutral bright ring on top, so it reads the same under any overlay.
 // - No edges are derived here. Members are never connected by guessed lines.
-import type { Circuit } from "../../data/schema";
+import type { Circuit, Membership, Observation } from "../../data/schema";
 import { boundsOf, type Bounds, type Vec3 } from "../../scene/layout";
 import type { GraphView } from "../experiment/graphView";
 
@@ -185,6 +185,52 @@ export function getLayerFrameStyle(layer: number, overlay: CircuitOverlay | null
     return { edgeColor: PALETTE.circuitOutline, edgeOpacity: 0.45, fillColor, fillOpacity: 0.12 };
   }
   return { edgeColor: PALETTE.layerFrame, edgeOpacity: 0.3, fillColor, fillOpacity: 0.06 };
+}
+
+export interface HeadMembership {
+  membership: Membership;
+  circuit: Circuit;
+  roleLabel: string;
+  style: RoleStyle;
+}
+
+export interface HeadEvidence {
+  /** Every circuit membership of this head, across all circuits, in circuit order. */
+  memberships: HeadMembership[];
+  /** The subset that comes from published research (origin "published"). */
+  published: HeadMembership[];
+  /** Detector results on this head. Empty means nothing was measured, not a score of zero. */
+  observations: Observation[];
+}
+
+/** Everything the inspector and list need to describe one head, kept apart by evidence kind. */
+export function getHeadEvidence(view: GraphView, nodeId: string): HeadEvidence {
+  const circuitOrder = new Map(view.circuits.map((c, i) => [c.id, i]));
+  const memberships: HeadMembership[] = [];
+  for (const membership of view.membershipsByNode.get(nodeId) ?? []) {
+    const circuit = view.circuitById.get(membership.circuit_id);
+    if (!circuit) {
+      continue;
+    }
+    const role = circuit.roles.find((r) => r.id === membership.role);
+    memberships.push({
+      membership,
+      circuit,
+      roleLabel: role?.label ?? membership.role,
+      style: getRoleStyle(circuit, membership.role),
+    });
+  }
+  memberships.sort(
+    (a, b) =>
+      (circuitOrder.get(a.circuit.id) ?? 0) - (circuitOrder.get(b.circuit.id) ?? 0) ||
+      a.circuit.roles.findIndex((r) => r.id === a.membership.role) -
+        b.circuit.roles.findIndex((r) => r.id === b.membership.role),
+  );
+  return {
+    memberships,
+    published: memberships.filter((m) => m.circuit.origin === "published"),
+    observations: view.observationsByNode.get(nodeId) ?? [],
+  };
 }
 
 export interface RoleLegendEntry {

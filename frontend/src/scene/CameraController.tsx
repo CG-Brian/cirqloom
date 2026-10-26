@@ -21,21 +21,21 @@ export function CameraController({ bounds }: { bounds: Bounds }) {
   const aspect = useThree((s) => (s.size.height > 0 ? s.size.width / s.size.height : 1));
   const resetNonce = useExplorerStore((s) => s.cameraCommand?.nonce ?? 0);
   const goal = useRef<Goal | null>(null);
-  const placed = useRef(false);
+  /** True once the user has moved the camera away from the canonical view. */
+  const userMoved = useRef(false);
 
   const pose = useMemo(() => canonicalCameraPose(bounds, aspect), [bounds, aspect]);
 
-  // Snap to the canonical view once, when the real canvas size is first known.
-  // Later resizes only change where "Reset view" goes; they never move the user's camera.
+  // Keep the canonical view fitted to the canvas (first size, panels collapsing, window
+  // resizes) until the user moves the camera. After that, resizes never move their view.
   useEffect(() => {
     const c = controls.current;
-    if (placed.current || !c) {
+    if (userMoved.current || goal.current || !c) {
       return;
     }
     camera.position.set(...pose.position);
     c.target.set(...pose.target);
     c.update();
-    placed.current = true;
   }, [camera, pose]);
 
   useEffect(() => {
@@ -67,6 +67,8 @@ export function CameraController({ bounds }: { bounds: Bounds }) {
       camera.position.copy(g.position);
       c.target.copy(g.target);
       goal.current = null;
+      // Back at the canonical view, so later resizes may refit it again.
+      userMoved.current = false;
     }
     c.update();
   });
@@ -82,6 +84,14 @@ export function CameraController({ bounds }: { bounds: Bounds }) {
       // The user grabbing the camera always wins over a running animation.
       onStart={() => {
         goal.current = null;
+      }}
+      // "start" also fires for a plain click, so decide on release whether the view moved.
+      onEnd={() => {
+        const c = controls.current;
+        userMoved.current =
+          !c ||
+          camera.position.distanceTo(new Vector3(...pose.position)) > ARRIVED_EPSILON ||
+          c.target.distanceTo(new Vector3(...pose.target)) > ARRIVED_EPSILON;
       }}
     />
   );

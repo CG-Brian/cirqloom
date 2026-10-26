@@ -1,5 +1,5 @@
 // Turns raw bundle JSON into indexed, render-ready data. Scene components read only this.
-import type { Circuit, Graph, Manifest, Membership } from "../../data/schema";
+import type { Circuit, Graph, Manifest, Membership, Observation } from "../../data/schema";
 import { boundsOf, headPosition, type Bounds, type Vec3 } from "../../scene/layout";
 
 export interface HeadView {
@@ -21,6 +21,8 @@ export interface GraphView {
   circuitById: Map<string, Circuit>;
   /** Many-to-many: one head can belong to several circuits/roles. */
   membershipsByNode: Map<string, Membership[]>;
+  /** Detector results per head. A head with no entry has no measurements in this bundle. */
+  observationsByNode: Map<string, Observation[]>;
   bounds: Bounds;
 }
 
@@ -46,15 +48,8 @@ export function buildGraphView(manifest: Manifest, graph: Graph): GraphView {
     nodesByLayer[node.layer]?.push(node);
   }
 
-  const membershipsByNode = new Map<string, Membership[]>();
-  for (const m of graph.memberships) {
-    const list = membershipsByNode.get(m.node_id);
-    if (list) {
-      list.push(m);
-    } else {
-      membershipsByNode.set(m.node_id, [m]);
-    }
-  }
+  const membershipsByNode = groupByNode(graph.memberships);
+  const observationsByNode = groupByNode(graph.observations);
 
   return {
     modelId: manifest.model.id,
@@ -66,6 +61,20 @@ export function buildGraphView(manifest: Manifest, graph: Graph): GraphView {
     circuits: graph.circuits,
     circuitById: new Map(graph.circuits.map((c) => [c.id, c])),
     membershipsByNode,
+    observationsByNode,
     bounds: boundsOf(nodes.map((n) => n.position)),
   };
+}
+
+function groupByNode<T extends { node_id: string }>(items: T[]): Map<string, T[]> {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const list = groups.get(item.node_id);
+    if (list) {
+      list.push(item);
+    } else {
+      groups.set(item.node_id, [item]);
+    }
+  }
+  return groups;
 }

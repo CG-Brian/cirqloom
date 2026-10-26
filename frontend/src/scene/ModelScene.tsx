@@ -1,8 +1,8 @@
-// The 3D canvas. Subscribes only to the active circuit; hover and selection are read per head.
+// The 3D canvas. Hover and selection are read per head, so they never re-render the scene root.
 import { Canvas } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import type { GraphView } from "../features/experiment/graphView";
-import { getCircuitOverlay } from "../features/overlays/selectors";
+import type { CircuitOverlay } from "../features/overlays/selectors";
 import { useExplorerStore } from "../features/selection/store";
 import { CameraController } from "./CameraController";
 import { CLICK_SLOP_PX } from "./HeadNode";
@@ -13,11 +13,15 @@ import { LayerGroup } from "./LayerGroup";
 const BACKGROUND = "#0b0f14";
 const TOOLTIP_OFFSET_PX = 14;
 
-export function ModelScene({ view }: { view: GraphView }) {
-  const activeCircuitId = useExplorerStore((s) => s.activeCircuitId);
+interface ModelSceneProps {
+  view: GraphView;
+  /** Computed once by the app from the store's active circuit and shared with the panels. */
+  overlay: CircuitOverlay | null;
+}
+
+export function ModelScene({ view, overlay }: ModelSceneProps) {
   const select = useExplorerStore((s) => s.select);
 
-  const overlay = useMemo(() => getCircuitOverlay(view, activeCircuitId), [view, activeCircuitId]);
   // First-frame guess only; CameraController refits once the real canvas size is known.
   const initialPose = useMemo(() => canonicalCameraPose(view.bounds, 16 / 9), [view.bounds]);
 

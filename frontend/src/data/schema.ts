@@ -141,6 +141,7 @@ export type Graph = z.infer<typeof GraphSchema>;
 export type Experiment = z.infer<typeof ExperimentSchema>;
 export type Circuit = z.infer<typeof CircuitSchema>;
 export type Membership = z.infer<typeof MembershipSchema>;
+export type Observation = z.infer<typeof ObservationSchema>;
 
 /** Checks that need both files at once. Returns problems; empty means OK. */
 export function crossCheckBundle(manifest: Manifest, graph: Graph): string[] {
