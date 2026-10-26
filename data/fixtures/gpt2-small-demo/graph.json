@@ -1,0 +1,979 @@
+{
+  "bundle_id": "fixture:gpt2-small-demo:v1",
+  "circuits": [
+    {
+      "citation": null,
+      "description": "Deliberately artificial diagonal pattern (LkHk). Exercises the UI only; not a finding about GPT-2.",
+      "id": "circuit:gpt2-small:fixture-demo",
+      "name": "Demo fixture circuit",
+      "origin": "synthetic_fixture",
+      "roles": [
+        {
+          "description": "Even layers.",
+          "id": "fixture_role_a",
+          "label": "Fixture role A"
+        },
+        {
+          "description": "Odd layers.",
+          "id": "fixture_role_b",
+          "label": "Fixture role B"
+        }
+      ]
+    }
+  ],
+  "edges": [],
+  "memberships": [
+    {
+      "circuit_id": "circuit:gpt2-small:fixture-demo",
+      "evidence_status": "experimental",
+      "node_id": "model:gpt2-small:head:L0H0",
+      "role": "fixture_role_a",
+      "source_reference": "synthetic fixture (build_fixture_bundle.py)"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:fixture-demo",
+      "evidence_status": "experimental",
+      "node_id": "model:gpt2-small:head:L1H1",
+      "role": "fixture_role_b",
+      "source_reference": "synthetic fixture (build_fixture_bundle.py)"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:fixture-demo",
+      "evidence_status": "experimental",
+      "node_id": "model:gpt2-small:head:L2H2",
+      "role": "fixture_role_a",
+      "source_reference": "synthetic fixture (build_fixture_bundle.py)"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:fixture-demo",
+      "evidence_status": "experimental",
+      "node_id": "model:gpt2-small:head:L3H3",
+      "role": "fixture_role_b",
+      "source_reference": "synthetic fixture (build_fixture_bundle.py)"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:fixture-demo",
+      "evidence_status": "experimental",
+      "node_id": "model:gpt2-small:head:L4H4",
+      "role": "fixture_role_a",
+      "source_reference": "synthetic fixture (build_fixture_bundle.py)"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:fixture-demo",
+      "evidence_status": "experimental",
+      "node_id": "model:gpt2-small:head:L5H5",
+      "role": "fixture_role_b",
+      "source_reference": "synthetic fixture (build_fixture_bundle.py)"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:fixture-demo",
+      "evidence_status": "experimental",
+      "node_id": "model:gpt2-small:head:L6H6",
+      "role": "fixture_role_a",
+      "source_reference": "synthetic fixture (build_fixture_bundle.py)"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:fixture-demo",
+      "evidence_status": "experimental",
+      "node_id": "model:gpt2-small:head:L7H7",
+      "role": "fixture_role_b",
+      "source_reference": "synthetic fixture (build_fixture_bundle.py)"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:fixture-demo",
+      "evidence_status": "experimental",
+      "node_id": "model:gpt2-small:head:L8H8",
+      "role": "fixture_role_a",
+      "source_reference": "synthetic fixture (build_fixture_bundle.py)"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:fixture-demo",
+      "evidence_status": "experimental",
+      "node_id": "model:gpt2-small:head:L9H9",
+      "role": "fixture_role_b",
+      "source_reference": "synthetic fixture (build_fixture_bundle.py)"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:fixture-demo",
+      "evidence_status": "experimental",
+      "node_id": "model:gpt2-small:head:L10H10",
+      "role": "fixture_role_a",
+      "source_reference": "synthetic fixture (build_fixture_bundle.py)"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:fixture-demo",
+      "evidence_status": "experimental",
+      "node_id": "model:gpt2-small:head:L11H11",
+      "role": "fixture_role_b",
+      "source_reference": "synthetic fixture (build_fixture_bundle.py)"
+    }
+  ],
+  "nodes": [
+    {
+      "head": 0,
+      "id": "model:gpt2-small:head:L0H0",
+      "layer": 0,
+      "type": "attention_head"
+    },
+    {
+      "head": 1,
+      "id": "model:gpt2-small:head:L0H1",
+      "layer": 0,
+      "type": "attention_head"
+    },
+    {
+      "head": 2,
+      "id": "model:gpt2-small:head:L0H2",
+      "layer": 0,
+      "type": "attention_head"
+    },
+    {
+      "head": 3,
+      "id": "model:gpt2-small:head:L0H3",
+      "layer": 0,
+      "type": "attention_head"
+    },
+    {
+      "head": 4,
+      "id": "model:gpt2-small:head:L0H4",
+      "layer": 0,
+      "type": "attention_head"
+    },
+    {
+      "head": 5,
+      "id": "model:gpt2-small:head:L0H5",
+      "layer": 0,
+      "type": "attention_head"
+    },
+    {
+      "head": 6,
+      "id": "model:gpt2-small:head:L0H6",
+      "layer": 0,
+      "type": "attention_head"
+    },
+    {
+      "head": 7,
+      "id": "model:gpt2-small:head:L0H7",
+      "layer": 0,
+      "type": "attention_head"
+    },
+    {
+      "head": 8,
+      "id": "model:gpt2-small:head:L0H8",
+      "layer": 0,
+      "type": "attention_head"
+    },
+    {
+      "head": 9,
+      "id": "model:gpt2-small:head:L0H9",
+      "layer": 0,
+      "type": "attention_head"
+    },
+    {
+      "head": 10,
+      "id": "model:gpt2-small:head:L0H10",
+      "layer": 0,
+      "type": "attention_head"
+    },
+    {
+      "head": 11,
+      "id": "model:gpt2-small:head:L0H11",
+      "layer": 0,
+      "type": "attention_head"
+    },
+    {
+      "head": 0,
+      "id": "model:gpt2-small:head:L1H0",
+      "layer": 1,
+      "type": "attention_head"
+    },
+    {
+      "head": 1,
+      "id": "model:gpt2-small:head:L1H1",
+      "layer": 1,
+      "type": "attention_head"
+    },
+    {
+      "head": 2,
+      "id": "model:gpt2-small:head:L1H2",
+      "layer": 1,
+      "type": "attention_head"
+    },
+    {
+      "head": 3,
+      "id": "model:gpt2-small:head:L1H3",
+      "layer": 1,
+      "type": "attention_head"
+    },
+    {
+      "head": 4,
+      "id": "model:gpt2-small:head:L1H4",
+      "layer": 1,
+      "type": "attention_head"
+    },
+    {
+      "head": 5,
+      "id": "model:gpt2-small:head:L1H5",
+      "layer": 1,
+      "type": "attention_head"
+    },
+    {
+      "head": 6,
+      "id": "model:gpt2-small:head:L1H6",
+      "layer": 1,
+      "type": "attention_head"
+    },
+    {
+      "head": 7,
+      "id": "model:gpt2-small:head:L1H7",
+      "layer": 1,
+      "type": "attention_head"
+    },
+    {
+      "head": 8,
+      "id": "model:gpt2-small:head:L1H8",
+      "layer": 1,
+      "type": "attention_head"
+    },
+    {
+      "head": 9,
+      "id": "model:gpt2-small:head:L1H9",
+      "layer": 1,
+      "type": "attention_head"
+    },
+    {
+      "head": 10,
+      "id": "model:gpt2-small:head:L1H10",
+      "layer": 1,
+      "type": "attention_head"
+    },
+    {
+      "head": 11,
+      "id": "model:gpt2-small:head:L1H11",
+      "layer": 1,
+      "type": "attention_head"
+    },
+    {
+      "head": 0,
+      "id": "model:gpt2-small:head:L2H0",
+      "layer": 2,
+      "type": "attention_head"
+    },
+    {
+      "head": 1,
+      "id": "model:gpt2-small:head:L2H1",
+      "layer": 2,
+      "type": "attention_head"
+    },
+    {
+      "head": 2,
+      "id": "model:gpt2-small:head:L2H2",
+      "layer": 2,
+      "type": "attention_head"
+    },
+    {
+      "head": 3,
+      "id": "model:gpt2-small:head:L2H3",
+      "layer": 2,
+      "type": "attention_head"
+    },
+    {
+      "head": 4,
+      "id": "model:gpt2-small:head:L2H4",
+      "layer": 2,
+      "type": "attention_head"
+    },
+    {
+      "head": 5,
+      "id": "model:gpt2-small:head:L2H5",
+      "layer": 2,
+      "type": "attention_head"
+    },
+    {
+      "head": 6,
+      "id": "model:gpt2-small:head:L2H6",
+      "layer": 2,
+      "type": "attention_head"
+    },
+    {
+      "head": 7,
+      "id": "model:gpt2-small:head:L2H7",
+      "layer": 2,
+      "type": "attention_head"
+    },
+    {
+      "head": 8,
+      "id": "model:gpt2-small:head:L2H8",
+      "layer": 2,
+      "type": "attention_head"
+    },
+    {
+      "head": 9,
+      "id": "model:gpt2-small:head:L2H9",
+      "layer": 2,
+      "type": "attention_head"
+    },
+    {
+      "head": 10,
+      "id": "model:gpt2-small:head:L2H10",
+      "layer": 2,
+      "type": "attention_head"
+    },
+    {
+      "head": 11,
+      "id": "model:gpt2-small:head:L2H11",
+      "layer": 2,
+      "type": "attention_head"
+    },
+    {
+      "head": 0,
+      "id": "model:gpt2-small:head:L3H0",
+      "layer": 3,
+      "type": "attention_head"
+    },
+    {
+      "head": 1,
+      "id": "model:gpt2-small:head:L3H1",
+      "layer": 3,
+      "type": "attention_head"
+    },
+    {
+      "head": 2,
+      "id": "model:gpt2-small:head:L3H2",
+      "layer": 3,
+      "type": "attention_head"
+    },
+    {
+      "head": 3,
+      "id": "model:gpt2-small:head:L3H3",
+      "layer": 3,
+      "type": "attention_head"
+    },
+    {
+      "head": 4,
+      "id": "model:gpt2-small:head:L3H4",
+      "layer": 3,
+      "type": "attention_head"
+    },
+    {
+      "head": 5,
+      "id": "model:gpt2-small:head:L3H5",
+      "layer": 3,
+      "type": "attention_head"
+    },
+    {
+      "head": 6,
+      "id": "model:gpt2-small:head:L3H6",
+      "layer": 3,
+      "type": "attention_head"
+    },
+    {
+      "head": 7,
+      "id": "model:gpt2-small:head:L3H7",
+      "layer": 3,
+      "type": "attention_head"
+    },
+    {
+      "head": 8,
+      "id": "model:gpt2-small:head:L3H8",
+      "layer": 3,
+      "type": "attention_head"
+    },
+    {
+      "head": 9,
+      "id": "model:gpt2-small:head:L3H9",
+      "layer": 3,
+      "type": "attention_head"
+    },
+    {
+      "head": 10,
+      "id": "model:gpt2-small:head:L3H10",
+      "layer": 3,
+      "type": "attention_head"
+    },
+    {
+      "head": 11,
+      "id": "model:gpt2-small:head:L3H11",
+      "layer": 3,
+      "type": "attention_head"
+    },
+    {
+      "head": 0,
+      "id": "model:gpt2-small:head:L4H0",
+      "layer": 4,
+      "type": "attention_head"
+    },
+    {
+      "head": 1,
+      "id": "model:gpt2-small:head:L4H1",
+      "layer": 4,
+      "type": "attention_head"
+    },
+    {
+      "head": 2,
+      "id": "model:gpt2-small:head:L4H2",
+      "layer": 4,
+      "type": "attention_head"
+    },
+    {
+      "head": 3,
+      "id": "model:gpt2-small:head:L4H3",
+      "layer": 4,
+      "type": "attention_head"
+    },
+    {
+      "head": 4,
+      "id": "model:gpt2-small:head:L4H4",
+      "layer": 4,
+      "type": "attention_head"
+    },
+    {
+      "head": 5,
+      "id": "model:gpt2-small:head:L4H5",
+      "layer": 4,
+      "type": "attention_head"
+    },
+    {
+      "head": 6,
+      "id": "model:gpt2-small:head:L4H6",
+      "layer": 4,
+      "type": "attention_head"
+    },
+    {
+      "head": 7,
+      "id": "model:gpt2-small:head:L4H7",
+      "layer": 4,
+      "type": "attention_head"
+    },
+    {
+      "head": 8,
+      "id": "model:gpt2-small:head:L4H8",
+      "layer": 4,
+      "type": "attention_head"
+    },
+    {
+      "head": 9,
+      "id": "model:gpt2-small:head:L4H9",
+      "layer": 4,
+      "type": "attention_head"
+    },
+    {
+      "head": 10,
+      "id": "model:gpt2-small:head:L4H10",
+      "layer": 4,
+      "type": "attention_head"
+    },
+    {
+      "head": 11,
+      "id": "model:gpt2-small:head:L4H11",
+      "layer": 4,
+      "type": "attention_head"
+    },
+    {
+      "head": 0,
+      "id": "model:gpt2-small:head:L5H0",
+      "layer": 5,
+      "type": "attention_head"
+    },
+    {
+      "head": 1,
+      "id": "model:gpt2-small:head:L5H1",
+      "layer": 5,
+      "type": "attention_head"
+    },
+    {
+      "head": 2,
+      "id": "model:gpt2-small:head:L5H2",
+      "layer": 5,
+      "type": "attention_head"
+    },
+    {
+      "head": 3,
+      "id": "model:gpt2-small:head:L5H3",
+      "layer": 5,
+      "type": "attention_head"
+    },
+    {
+      "head": 4,
+      "id": "model:gpt2-small:head:L5H4",
+      "layer": 5,
+      "type": "attention_head"
+    },
+    {
+      "head": 5,
+      "id": "model:gpt2-small:head:L5H5",
+      "layer": 5,
+      "type": "attention_head"
+    },
+    {
+      "head": 6,
+      "id": "model:gpt2-small:head:L5H6",
+      "layer": 5,
+      "type": "attention_head"
+    },
+    {
+      "head": 7,
+      "id": "model:gpt2-small:head:L5H7",
+      "layer": 5,
+      "type": "attention_head"
+    },
+    {
+      "head": 8,
+      "id": "model:gpt2-small:head:L5H8",
+      "layer": 5,
+      "type": "attention_head"
+    },
+    {
+      "head": 9,
+      "id": "model:gpt2-small:head:L5H9",
+      "layer": 5,
+      "type": "attention_head"
+    },
+    {
+      "head": 10,
+      "id": "model:gpt2-small:head:L5H10",
+      "layer": 5,
+      "type": "attention_head"
+    },
+    {
+      "head": 11,
+      "id": "model:gpt2-small:head:L5H11",
+      "layer": 5,
+      "type": "attention_head"
+    },
+    {
+      "head": 0,
+      "id": "model:gpt2-small:head:L6H0",
+      "layer": 6,
+      "type": "attention_head"
+    },
+    {
+      "head": 1,
+      "id": "model:gpt2-small:head:L6H1",
+      "layer": 6,
+      "type": "attention_head"
+    },
+    {
+      "head": 2,
+      "id": "model:gpt2-small:head:L6H2",
+      "layer": 6,
+      "type": "attention_head"
+    },
+    {
+      "head": 3,
+      "id": "model:gpt2-small:head:L6H3",
+      "layer": 6,
+      "type": "attention_head"
+    },
+    {
+      "head": 4,
+      "id": "model:gpt2-small:head:L6H4",
+      "layer": 6,
+      "type": "attention_head"
+    },
+    {
+      "head": 5,
+      "id": "model:gpt2-small:head:L6H5",
+      "layer": 6,
+      "type": "attention_head"
+    },
+    {
+      "head": 6,
+      "id": "model:gpt2-small:head:L6H6",
+      "layer": 6,
+      "type": "attention_head"
+    },
+    {
+      "head": 7,
+      "id": "model:gpt2-small:head:L6H7",
+      "layer": 6,
+      "type": "attention_head"
+    },
+    {
+      "head": 8,
+      "id": "model:gpt2-small:head:L6H8",
+      "layer": 6,
+      "type": "attention_head"
+    },
+    {
+      "head": 9,
+      "id": "model:gpt2-small:head:L6H9",
+      "layer": 6,
+      "type": "attention_head"
+    },
+    {
+      "head": 10,
+      "id": "model:gpt2-small:head:L6H10",
+      "layer": 6,
+      "type": "attention_head"
+    },
+    {
+      "head": 11,
+      "id": "model:gpt2-small:head:L6H11",
+      "layer": 6,
+      "type": "attention_head"
+    },
+    {
+      "head": 0,
+      "id": "model:gpt2-small:head:L7H0",
+      "layer": 7,
+      "type": "attention_head"
+    },
+    {
+      "head": 1,
+      "id": "model:gpt2-small:head:L7H1",
+      "layer": 7,
+      "type": "attention_head"
+    },
+    {
+      "head": 2,
+      "id": "model:gpt2-small:head:L7H2",
+      "layer": 7,
+      "type": "attention_head"
+    },
+    {
+      "head": 3,
+      "id": "model:gpt2-small:head:L7H3",
+      "layer": 7,
+      "type": "attention_head"
+    },
+    {
+      "head": 4,
+      "id": "model:gpt2-small:head:L7H4",
+      "layer": 7,
+      "type": "attention_head"
+    },
+    {
+      "head": 5,
+      "id": "model:gpt2-small:head:L7H5",
+      "layer": 7,
+      "type": "attention_head"
+    },
+    {
+      "head": 6,
+      "id": "model:gpt2-small:head:L7H6",
+      "layer": 7,
+      "type": "attention_head"
+    },
+    {
+      "head": 7,
+      "id": "model:gpt2-small:head:L7H7",
+      "layer": 7,
+      "type": "attention_head"
+    },
+    {
+      "head": 8,
+      "id": "model:gpt2-small:head:L7H8",
+      "layer": 7,
+      "type": "attention_head"
+    },
+    {
+      "head": 9,
+      "id": "model:gpt2-small:head:L7H9",
+      "layer": 7,
+      "type": "attention_head"
+    },
+    {
+      "head": 10,
+      "id": "model:gpt2-small:head:L7H10",
+      "layer": 7,
+      "type": "attention_head"
+    },
+    {
+      "head": 11,
+      "id": "model:gpt2-small:head:L7H11",
+      "layer": 7,
+      "type": "attention_head"
+    },
+    {
+      "head": 0,
+      "id": "model:gpt2-small:head:L8H0",
+      "layer": 8,
+      "type": "attention_head"
+    },
+    {
+      "head": 1,
+      "id": "model:gpt2-small:head:L8H1",
+      "layer": 8,
+      "type": "attention_head"
+    },
+    {
+      "head": 2,
+      "id": "model:gpt2-small:head:L8H2",
+      "layer": 8,
+      "type": "attention_head"
+    },
+    {
+      "head": 3,
+      "id": "model:gpt2-small:head:L8H3",
+      "layer": 8,
+      "type": "attention_head"
+    },
+    {
+      "head": 4,
+      "id": "model:gpt2-small:head:L8H4",
+      "layer": 8,
+      "type": "attention_head"
+    },
+    {
+      "head": 5,
+      "id": "model:gpt2-small:head:L8H5",
+      "layer": 8,
+      "type": "attention_head"
+    },
+    {
+      "head": 6,
+      "id": "model:gpt2-small:head:L8H6",
+      "layer": 8,
+      "type": "attention_head"
+    },
+    {
+      "head": 7,
+      "id": "model:gpt2-small:head:L8H7",
+      "layer": 8,
+      "type": "attention_head"
+    },
+    {
+      "head": 8,
+      "id": "model:gpt2-small:head:L8H8",
+      "layer": 8,
+      "type": "attention_head"
+    },
+    {
+      "head": 9,
+      "id": "model:gpt2-small:head:L8H9",
+      "layer": 8,
+      "type": "attention_head"
+    },
+    {
+      "head": 10,
+      "id": "model:gpt2-small:head:L8H10",
+      "layer": 8,
+      "type": "attention_head"
+    },
+    {
+      "head": 11,
+      "id": "model:gpt2-small:head:L8H11",
+      "layer": 8,
+      "type": "attention_head"
+    },
+    {
+      "head": 0,
+      "id": "model:gpt2-small:head:L9H0",
+      "layer": 9,
+      "type": "attention_head"
+    },
+    {
+      "head": 1,
+      "id": "model:gpt2-small:head:L9H1",
+      "layer": 9,
+      "type": "attention_head"
+    },
+    {
+      "head": 2,
+      "id": "model:gpt2-small:head:L9H2",
+      "layer": 9,
+      "type": "attention_head"
+    },
+    {
+      "head": 3,
+      "id": "model:gpt2-small:head:L9H3",
+      "layer": 9,
+      "type": "attention_head"
+    },
+    {
+      "head": 4,
+      "id": "model:gpt2-small:head:L9H4",
+      "layer": 9,
+      "type": "attention_head"
+    },
+    {
+      "head": 5,
+      "id": "model:gpt2-small:head:L9H5",
+      "layer": 9,
+      "type": "attention_head"
+    },
+    {
+      "head": 6,
+      "id": "model:gpt2-small:head:L9H6",
+      "layer": 9,
+      "type": "attention_head"
+    },
+    {
+      "head": 7,
+      "id": "model:gpt2-small:head:L9H7",
+      "layer": 9,
+      "type": "attention_head"
+    },
+    {
+      "head": 8,
+      "id": "model:gpt2-small:head:L9H8",
+      "layer": 9,
+      "type": "attention_head"
+    },
+    {
+      "head": 9,
+      "id": "model:gpt2-small:head:L9H9",
+      "layer": 9,
+      "type": "attention_head"
+    },
+    {
+      "head": 10,
+      "id": "model:gpt2-small:head:L9H10",
+      "layer": 9,
+      "type": "attention_head"
+    },
+    {
+      "head": 11,
+      "id": "model:gpt2-small:head:L9H11",
+      "layer": 9,
+      "type": "attention_head"
+    },
+    {
+      "head": 0,
+      "id": "model:gpt2-small:head:L10H0",
+      "layer": 10,
+      "type": "attention_head"
+    },
+    {
+      "head": 1,
+      "id": "model:gpt2-small:head:L10H1",
+      "layer": 10,
+      "type": "attention_head"
+    },
+    {
+      "head": 2,
+      "id": "model:gpt2-small:head:L10H2",
+      "layer": 10,
+      "type": "attention_head"
+    },
+    {
+      "head": 3,
+      "id": "model:gpt2-small:head:L10H3",
+      "layer": 10,
+      "type": "attention_head"
+    },
+    {
+      "head": 4,
+      "id": "model:gpt2-small:head:L10H4",
+      "layer": 10,
+      "type": "attention_head"
+    },
+    {
+      "head": 5,
+      "id": "model:gpt2-small:head:L10H5",
+      "layer": 10,
+      "type": "attention_head"
+    },
+    {
+      "head": 6,
+      "id": "model:gpt2-small:head:L10H6",
+      "layer": 10,
+      "type": "attention_head"
+    },
+    {
+      "head": 7,
+      "id": "model:gpt2-small:head:L10H7",
+      "layer": 10,
+      "type": "attention_head"
+    },
+    {
+      "head": 8,
+      "id": "model:gpt2-small:head:L10H8",
+      "layer": 10,
+      "type": "attention_head"
+    },
+    {
+      "head": 9,
+      "id": "model:gpt2-small:head:L10H9",
+      "layer": 10,
+      "type": "attention_head"
+    },
+    {
+      "head": 10,
+      "id": "model:gpt2-small:head:L10H10",
+      "layer": 10,
+      "type": "attention_head"
+    },
+    {
+      "head": 11,
+      "id": "model:gpt2-small:head:L10H11",
+      "layer": 10,
+      "type": "attention_head"
+    },
+    {
+      "head": 0,
+      "id": "model:gpt2-small:head:L11H0",
+      "layer": 11,
+      "type": "attention_head"
+    },
+    {
+      "head": 1,
+      "id": "model:gpt2-small:head:L11H1",
+      "layer": 11,
+      "type": "attention_head"
+    },
+    {
+      "head": 2,
+      "id": "model:gpt2-small:head:L11H2",
+      "layer": 11,
+      "type": "attention_head"
+    },
+    {
+      "head": 3,
+      "id": "model:gpt2-small:head:L11H3",
+      "layer": 11,
+      "type": "attention_head"
+    },
+    {
+      "head": 4,
+      "id": "model:gpt2-small:head:L11H4",
+      "layer": 11,
+      "type": "attention_head"
+    },
+    {
+      "head": 5,
+      "id": "model:gpt2-small:head:L11H5",
+      "layer": 11,
+      "type": "attention_head"
+    },
+    {
+      "head": 6,
+      "id": "model:gpt2-small:head:L11H6",
+      "layer": 11,
+      "type": "attention_head"
+    },
+    {
+      "head": 7,
+      "id": "model:gpt2-small:head:L11H7",
+      "layer": 11,
+      "type": "attention_head"
+    },
+    {
+      "head": 8,
+      "id": "model:gpt2-small:head:L11H8",
+      "layer": 11,
+      "type": "attention_head"
+    },
+    {
+      "head": 9,
+      "id": "model:gpt2-small:head:L11H9",
+      "layer": 11,
+      "type": "attention_head"
+    },
+    {
+      "head": 10,
+      "id": "model:gpt2-small:head:L11H10",
+      "layer": 11,
+      "type": "attention_head"
+    },
+    {
+      "head": 11,
+      "id": "model:gpt2-small:head:L11H11",
+      "layer": 11,
+      "type": "attention_head"
+    }
+  ],
+  "observations": [],
+  "schema_version": "1.0.0"
+}

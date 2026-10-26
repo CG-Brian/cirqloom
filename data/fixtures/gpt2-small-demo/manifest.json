@@ -1,0 +1,21 @@
+{
+  "bundle_id": "fixture:gpt2-small-demo:v1",
+  "display_warning": "Demo fixture — not measured model data.",
+  "experiments": [],
+  "graph_uri": "graph.json",
+  "model": {
+    "heads_per_layer": 12,
+    "hf_id": "openai-community/gpt2",
+    "id": "gpt2-small",
+    "layers": 12,
+    "revision": null,
+    "tokenizer_id": "openai-community/gpt2"
+  },
+  "provenance": {
+    "generator": "analysis/scripts/build_fixture_bundle.py",
+    "generator_version": "1",
+    "notes": "No model weights loaded. No detectors run."
+  },
+  "schema_version": "1.0.0",
+  "synthetic_fixture": true
+}

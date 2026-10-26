@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Node / frontend
+node_modules/
+dist/
+test-results/
+playwright-report/
+
+# Local
+.env
+.DS_Store
+
+# Kept out of the repo for now
+AGENTS.md
