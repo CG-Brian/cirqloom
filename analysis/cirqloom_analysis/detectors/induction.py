@@ -52,3 +52,18 @@ def induction_mask(repeat_len: int) -> np.ndarray:
     mask[: repeat_len + 1] = False
 
     return mask
+
+
+def induction_mask_for_seq(seq: int) -> np.ndarray:
+    """induction_mask for a (BOS, X, X) input of length seq, so all detectors share build_mask(seq).
+
+    repeat_len is recovered as (seq - 1) / 2. Arithmetic can only check that seq *could* be
+    such an input: an odd-length natural sentence also passes. Checking that the content
+    really repeats is the pipeline's job, via the spec's prompt_suite (checkpoint 7).
+    """
+    # Step 1: (BOS, X, X) always has odd length; an even seq cannot have this layout.
+    if seq % 2 == 0:
+        raise ValueError(f"induction input (BOS, X, X) needs odd seq = 1 + 2L, got {seq}")
+
+    # Step 2: induction_mask checks the minimum length (repeat_len >= 3, i.e. seq >= 7).
+    return induction_mask((seq - 1) // 2)

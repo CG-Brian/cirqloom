@@ -55,3 +55,10 @@ def uniform_head(seq: int) -> np.ndarray:
     """No preference: row q spreads attention evenly over k <= q."""
     lower = np.tril(np.ones((seq, seq)))
     return (lower / lower.sum(axis=-1, keepdims=True))[None, None]
+
+
+def mix(patterns: list[np.ndarray], weights: list[float]) -> np.ndarray:
+    """Weighted sum of patterns, e.g. 70% induction + 30% sink. Weights must sum to 1 so rows
+    still sum to 1, like a real head that does several things at once."""
+    assert len(patterns) == len(weights) and abs(sum(weights) - 1) < 1e-12
+    return sum(w * p for w, p in zip(weights, patterns, strict=True))
