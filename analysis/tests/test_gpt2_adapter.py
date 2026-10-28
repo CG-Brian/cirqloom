@@ -100,3 +100,24 @@ def test_pipeline_builds_a_valid_bundle(adapter, tmp_path):
     write_bundle(manifest, graph, tmp_path, assets)
     validate_bundle_files(tmp_path, read_bundle(tmp_path)[0])
     assert len(graph.observations) == 2 * 3 * 144
+
+
+@pytest.mark.parametrize("pattern", ["BABA", "ABBA"])
+def test_ioi_prompts_map_names_and_positions_with_the_real_tokenizer(adapter, pattern):
+    from cirqloom_analysis.prompts.ioi import (
+        BABA_TEMPLATES,
+        build_ioi_suite,
+        single_token_vocabulary,
+    )
+
+    vocab = single_token_vocabulary(adapter.tokenize)
+    assert len(vocab.names) >= 90  # GPT-2 keeps (nearly) all of the official names
+    for index in range(len(BABA_TEMPLATES)):
+        prompts = build_ioi_suite(index, pattern, list(range(4)), adapter.tokenize,
+                                  adapter.token_strings)
+        for p in prompts:
+            strings = adapter.token_strings(p.token_ids)
+            pos = p.positions
+            assert strings[pos["S1"]] == strings[pos["S2"]] != strings[pos["IO"]]
+            assert strings[pos["IO"]].startswith(" ") and strings[pos["END"]] == " to"
+            assert p.text is not None and strings[pos["IO"]].strip() in p.text

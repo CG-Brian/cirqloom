@@ -14,6 +14,10 @@ export interface HeadAttention {
   tokens: string[];
   /** weights[destination][source], decoded from float16 (about 3 significant digits). */
   weights: number[][];
+  /** Prompt text, for text suites (e.g. IOI). */
+  text?: string;
+  /** Named token positions decided by the Python prompt builder, e.g. { IO: 5, END: 15 }. */
+  positions?: Record<string, number>;
 }
 
 /** The only way UI code gets data. Swap implementations without touching components. */
@@ -23,6 +27,8 @@ export interface DataProvider {
   loadManifest(modelId: string): Promise<Manifest>;
   loadGraph(modelId: string, experimentId: string | null): Promise<Graph>;
   loadHeadAttention(experimentId: string, nodeId: string): Promise<HeadAttention>;
+  /** Named positions of the experiment's stored-attention prompt, or null if it has none. */
+  loadExperimentPositions(experimentId: string): Promise<Record<string, number> | null>;
 }
 
 export class BundleLoadError extends Error {

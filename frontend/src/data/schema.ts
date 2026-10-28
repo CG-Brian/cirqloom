@@ -18,7 +18,7 @@ export const EvidenceTypeSchema = z.enum([
   "causal_intervention",
 ]);
 
-const SchemaVersionSchema = z.literal("1.3.0");
+const SchemaVersionSchema = z.literal("1.4.0");
 
 export const ModelInfoSchema = z.strictObject({
   id: z.string(),
@@ -58,6 +58,10 @@ export const TokensFileSchema = z.strictObject({
       seed: z.int(),
       token_ids: z.array(z.int().nonnegative()),
       tokens: z.array(z.string()),
+      /** Text suites only (e.g. IOI); absent for random-token prompts. */
+      text: z.string().optional(),
+      /** Named token positions decided by the Python prompt builder, e.g. { IO: 5, END: 15 }. */
+      positions: z.record(z.string(), z.int().nonnegative()).optional(),
     }),
   ),
 });

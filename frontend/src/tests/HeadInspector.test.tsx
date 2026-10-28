@@ -1,6 +1,9 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DataProvider, HeadAttention } from "../data/DataProvider";
+import { StaticBundleProvider } from "../data/StaticBundleProvider";
 import type { Experiment, Graph, Manifest } from "../data/schema";
 import { getVisualEdgeGroups, type VisualEdgeGroup } from "../features/circuits/edgeGroups";
 import { buildGraphView } from "../features/experiment/graphView";
@@ -20,7 +23,21 @@ function toyAttention(experimentId: string, nodeId: string): HeadAttention {
 const stubProvider = {
   loadHeadAttention: (experimentId: string, nodeId: string) =>
     Promise.resolve(toyAttention(experimentId, nodeId)),
+  loadExperimentPositions: () => Promise.resolve(null),
 } as unknown as DataProvider;
+
+/** The real StaticBundleProvider, with fetch served from the committed data directory. */
+function diskProvider(): DataProvider {
+  const dataDir = path.resolve(process.cwd(), "../data");
+  vi.stubGlobal("fetch", async (url: string) => {
+    try {
+      return new Response(readFileSync(path.join(dataDir, url)), { status: 200 });
+    } catch {
+      return new Response("missing", { status: 404 });
+    }
+  });
+  return new StaticBundleProvider({ "gpt2-small": "/bundles/gpt2-small" });
+}
 
 function renderInspector(
   view = fixture.view,
@@ -215,6 +232,7 @@ describe("HeadInspector with observations", () => {
   it("shows a load failure instead of a chart", async () => {
     const failing = {
       loadHeadAttention: () => Promise.reject(new Error("HTTP 404")),
+      loadExperimentPositions: () => Promise.resolve(null),
     } as unknown as DataProvider;
     useExplorerStore.setState({ selectedNodeId: nodeId });
     renderInspector(view, manifest, expA, failing);
@@ -318,7 +336,7 @@ describe("HeadInspector on the GPT-2 bundle with the published IOI circuit", () 
     const scores = section("Measured observations");
     expect(within(scores).getAllByText("Experimental").length).toBeGreaterThan(0);
     expect(within(scores).getByTestId("published-vs-measured")).toHaveTextContent(
-      "measured here on repeated_tokens_v1 prompts. They do not test this head's published role (Induction in Indirect Object Identification (IOI))",
+      "measured here on repeated_tokens_v1 prompts. They are attention patterns and do not test this head's published role (Induction in Indirect Object Identification (IOI))",
     );
   });
 
@@ -388,5 +406,47 @@ describe("Relation inspector (IOI)", () => {
     const relations = section("Relations in the shown circuit");
     fireEvent.click(within(relations).getByRole("button", { name: "S-Inhibition group → Name Mover queries" }));
     expect(useExplorerStore.getState().selectedEdgeGroupId).toBe(groupWhere("Figure 4c").id);
+  });
+});
+
+describe("Observed attention alignment on IOI prompts", () => {
+  const measured = loadMeasured();
+  const groups = getVisualEdgeGroups(measured.view, "circuit:gpt2-small:ioi:wang-2022");
+  const fig4b = groups.find((g) => g.locator?.includes("Figure 4b"))!;
+  const ioiExperiment = measured.manifest.experiments.find((e) => e.id === "ioi_templates_v1:BABA-t00")!;
+  const repeated = measured.manifest.experiments.find((e) => e.id === "repeated_tokens_v1:L10")!;
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("lines up sender and receiver rows at the relation's positions, with real weights", async () => {
+    const provider = diskProvider();
+    useExplorerStore.setState({ selectedEdgeGroupId: fig4b.id });
+    renderInspector(measured.view, measured.manifest, ioiExperiment, provider, groups);
+    const table = await screen.findByRole("table");
+    const rows = within(table).getAllByRole("row").slice(1);
+    expect(rows.map((r) => within(r).getByRole("rowheader").textContent)).toEqual([
+      "L7H3 sender @END", "L7H9 sender @END", "L8H6 sender @END", "L8H10 sender @END",
+      "L9H6 receiver @END", "L9H9 receiver @END", "L10H0 receiver @END",
+    ]);
+    expect(within(table).getAllByRole("columnheader").map((c) => c.textContent)).toEqual([
+      "head @ query", "IO", "S1", "S1+1", "S2", "END",
+    ]);
+    // Cells are the stored weights: compare one with the provider's own decoding.
+    const att = await provider.loadHeadAttention(ioiExperiment.id, "model:gpt2-small:head:L8H6");
+    const end = att.positions!.END!;
+    const s2 = att.positions!.S2!;
+    const cell = within(rows[2]!).getByLabelText(/^S2: /);
+    expect(cell).toHaveAccessibleName(`S2: ${att.weights[end]![s2]!.toPrecision(3)}`);
+    expect(screen.getByTestId("attention-alignment")).toHaveTextContent(
+      "Rows are separate observations: lining them up does not show information passing",
+    );
+  });
+
+  it("offers experiments with the needed positions when the selected one has none", async () => {
+    useExplorerStore.setState({ selectedEdgeGroupId: fig4b.id });
+    renderInspector(measured.view, measured.manifest, repeated, diskProvider(), groups);
+    const suggestion = await screen.findByRole("button", { name: "ioi_templates_v1:BABA-t00" });
+    expect(screen.getAllByRole("button", { name: /^ioi_templates_v1:/ })).toHaveLength(6);
+    fireEvent.click(suggestion);
+    expect(useExplorerStore.getState().experimentId).toBe("ioi_templates_v1:BABA-t00");
   });
 });

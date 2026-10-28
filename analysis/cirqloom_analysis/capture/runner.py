@@ -9,6 +9,7 @@ index is always layer * n_heads + head (numpy C order of [layer, head]); `unflat
 the only place that undoes it.
 """
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 import numpy as np
@@ -46,6 +47,22 @@ def experiment_id(suite: str, repeat_len: int) -> str:
     return f"{suite}:L{repeat_len}"
 
 
+def experiment_id_for(prompt: Prompt) -> str:
+    """"{suite}:L{L}" for repeated-token prompts, "{suite}:{group}" for grouped text prompts."""
+    return f"{prompt.suite}:{prompt.group}" if prompt.group else experiment_id(prompt.suite,
+                                                                              prompt.repeat_len)
+
+
+def shared_positions(prompts: list[Prompt]) -> Mapping[str, int] | None:
+    """The named positions every prompt shares, or None if the prompts have none."""
+    positions = [p.positions for p in prompts]
+    if all(p is None for p in positions):
+        return None
+    if any(p != positions[0] for p in positions):
+        raise ValueError("prompts of one experiment must share the same named positions")
+    return positions[0]
+
+
 def detectors_for(registry: DetectorRegistry, suite: str) -> list[DetectorSpec]:
     """Registered detectors that may run on `suite` (measurement or declared control)."""
     return [spec for spec in registry if spec.accepts_suite(suite)]
@@ -66,9 +83,15 @@ def capture(adapter: BaseModelAdapter, prompts: list[Prompt]) -> np.ndarray:
 
 
 def score(
-    patterns: np.ndarray, suite: str, specs: list[DetectorSpec]
+    patterns: np.ndarray,
+    suite: str,
+    specs: list[DetectorSpec],
+    positions: Mapping[str, int] | None = None,
 ) -> dict[str, DetectorResult]:
-    """Score [n, layer, head, q, k] patterns with each spec, on a flat head axis."""
+    """Score [n, layer, head, q, k] patterns with each spec, on a flat head axis.
+
+    `positions` are the prompts' shared named positions, for detectors that read them.
+    """
     n, n_layers, n_heads, seq, _ = patterns.shape
     flat = patterns.reshape(n, n_layers * n_heads, seq, seq)
     results: dict[str, DetectorResult] = {}
@@ -78,7 +101,7 @@ def score(
                 f"detector {spec.id!r} is not valid on suite {suite!r} "
                 f"(measures {spec.prompt_suite!r}, controls {list(spec.control_suites)})"
             )
-        parameters = spec.resolve_parameters()
+        parameters = spec.parameters_for(positions)
         mask = spec.build_mask(seq, **parameters)
         summary = summarize([masked_head_mean(flat, mask)])
         results[spec.id] = DetectorResult(
@@ -96,11 +119,11 @@ def run_experiment(
     if not specs:
         raise ValueError(f"no registered detector accepts suite {suite!r}")
     return ExperimentRun(
-        experiment_id=experiment_id(suite, prompts[0].repeat_len),
+        experiment_id=experiment_id_for(prompts[0]),
         suite=suite,
         prompts=prompts,
         patterns=patterns,
-        results=score(patterns, suite, specs),
+        results=score(patterns, suite, specs, shared_positions(prompts)),
     )
 
 

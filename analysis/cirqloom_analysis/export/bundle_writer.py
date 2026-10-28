@@ -98,6 +98,13 @@ def validate_bundle_files(bundle_dir: Path, manifest: Manifest) -> None:
                     problems.append(f"{exp.tokens_uri}: {prompt.id} has the wrong length")
                 if len(prompt.tokens) != len(prompt.token_ids):
                     problems.append(f"{exp.tokens_uri}: {prompt.id} tokens/ids length differ")
+                bad = {k: v for k, v in (prompt.positions or {}).items()
+                       if not 0 <= v < exp.sequence_length}
+                if bad:
+                    problems.append(f"{exp.tokens_uri}: {prompt.id} positions out of range {bad}")
+            # Position-reading detectors use one set of positions per experiment.
+            if len({tuple(sorted((p.positions or {}).items())) for p in tokens.prompts}) > 1:
+                problems.append(f"{exp.tokens_uri}: prompts do not share the same positions")
         if exp.attention is not None:
             path = bundle_dir / exp.attention.uri
             size = 2

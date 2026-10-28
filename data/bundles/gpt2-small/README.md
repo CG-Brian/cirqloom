@@ -4,17 +4,23 @@ GPT-2 Small bundle: measured attention experiments and published circuit annotat
 apart by provenance and evidence status. Regenerate with:
 
     python analysis/scripts/build_gpt2_bundle.py --lengths 10 25 50 \
-        --seeds 8 --device cpu
+        --seeds 8 --ioi-templates 0 5 6 \
+        --ioi-seeds 8 --device cpu
 
 ## What this is
 
-Measured here: attention-pattern detectors on repeated random tokens, with a paired non-repeated control; every score is 'experimental' (heuristic attention, not causal evidence). Published, not measured here: the IOI circuit of Wang et al. (2022), imported from reviewed annotations. Repeated-token scores do not test any head's IOI role.
+Measured here: attention-pattern detectors on repeated random tokens, with a paired non-repeated control, and attention between named positions on IOI prompts built from the paper's templates; every score is 'experimental' (heuristic attention, not causal evidence). Published, not measured here: the IOI circuit of Wang et al. (2022), imported from reviewed annotations. No measured score verifies a published role.
 
 - Model: `openai-community/gpt2` at revision `607a30d783dfa663caf39e06633721c8d4cfcd7e`
   (12 layers × 12 heads).
-- Detectors: previous-token, first-token (BOS) and induction attention masks
-  (`analysis/cirqloom_analysis/detectors/`). Scores are mean masked attention per prompt,
-  averaged over prompts (n = prompts, not cells). Status is `experimental` for every score.
+- Detectors: previous-token, first-token (BOS) and induction attention masks on repeated
+  tokens; on IOI prompts, attention between named positions (END→IO, END→S1, END→S2, S2→S1,
+  S2→S1+1). Scores are mean masked attention per prompt, averaged over prompts (n = prompts,
+  not cells). Status is `experimental` for every score. IOI attention scores are observations:
+  they do not verify the paper's roles (no copying, output or causal test is run).
+- IOI prompts: `analysis/cirqloom_analysis/prompts/ioi.py` (paper templates and the official
+  code's names, places and objects; every filler is one GPT-2 token; positions IO, S1, S1+1,
+  S2, END are checked against the tokenizer and stored in each tokens file).
 - Attention assets: one prompt per measurement experiment, float16
   `[layer, head, q, k]`. Weights from the GPT-2 model card license apply to the model; this
   bundle contains derived attention values only, no weights.
@@ -34,6 +40,12 @@ The repeated-token experiments below do not test these roles.
 - `nonrepeated_tokens_v1:L25` (control, seq 51, 8 prompts): (BOS, X, Y): same BOS and X as the repeated suite, then 25 fresh random tokens. Control: no repetition.
 - `repeated_tokens_v1:L50` (measurement, seq 101, 8 prompts): (BOS, X, X): X is 50 random tokens repeated once.
 - `nonrepeated_tokens_v1:L50` (control, seq 101, 8 prompts): (BOS, X, Y): same BOS and X as the repeated suite, then 50 fresh random tokens. Control: no repetition.
+- `ioi_templates_v1:BABA-t00` (measurement, seq 16, 8 prompts): IOI template BABA-t00 (Wang et al. 2022, Appendix E), e.g. "Then, Andrew and Thomas went to the house. Andrew gave a computer to". Names, place and object vary per prompt; positions IO, S1, S1+1, S2, END are the same for all.
+- `ioi_templates_v1:ABBA-t00` (measurement, seq 16, 8 prompts): IOI template ABBA-t00 (Wang et al. 2022, Appendix E), e.g. "Then, Amy and Shannon went to the hospital. Shannon gave a kiss to". Names, place and object vary per prompt; positions IO, S1, S1+1, S2, END are the same for all.
+- `ioi_templates_v1:BABA-t05` (measurement, seq 15, 8 prompts): IOI template BABA-t05 (Wang et al. 2022, Appendix E), e.g. "After Kimberly and Stephanie went to the garden, Kimberly gave a computer to". Names, place and object vary per prompt; positions IO, S1, S1+1, S2, END are the same for all.
+- `ioi_templates_v1:ABBA-t05` (measurement, seq 15, 8 prompts): IOI template ABBA-t05 (Wang et al. 2022, Appendix E), e.g. "After Justin and Stephen went to the hospital, Stephen gave a ring to". Names, place and object vary per prompt; positions IO, S1, S1+1, S2, END are the same for all.
+- `ioi_templates_v1:BABA-t06` (measurement, seq 18, 8 prompts): IOI template BABA-t06 (Wang et al. 2022, Appendix E), e.g. "When Cody and Nicholas got a necklace at the school, Cody decided to give it to". Names, place and object vary per prompt; positions IO, S1, S1+1, S2, END are the same for all.
+- `ioi_templates_v1:ABBA-t06` (measurement, seq 18, 8 prompts): IOI template ABBA-t06 (Wang et al. 2022, Appendix E), e.g. "When Benjamin and Kenneth got a necklace at the garden, Kenneth decided to give it to". Names, place and object vary per prompt; positions IO, S1, S1+1, S2, END are the same for all.
 
 ## Input-side control (recorded, not judged)
 

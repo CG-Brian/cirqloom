@@ -10,6 +10,8 @@ import {
   heatmapPixels,
   maskCellSet,
   measurementFor,
+  namedPositions,
+  positionLabelsAt,
   readCell,
   weightColor,
 } from "../features/attention/heatmapModel";
@@ -138,6 +140,8 @@ describe("readCell", () => {
     expect(readCell(attention, set, 2, 1)).toEqual({
       q: 2,
       k: 1,
+      queryLabels: [],
+      sourceLabels: [],
       queryToken: "␣b",
       sourceToken: "␣a",
       weight: 0.2,
@@ -148,5 +152,24 @@ describe("readCell", () => {
 
   it("reports a future cell as not attendable (null), not as zero", () => {
     expect(readCell(attention, null, 0, 2).weight).toBeNull();
+  });
+});
+
+describe("named positions", () => {
+  const positions = { END: 15, S2: 11, IO: 5, "S1+1": 4, S1: 3 };
+
+  it("are listed in IOI order and found by index", () => {
+    expect(namedPositions(positions).map(([l]) => l)).toEqual(["IO", "S1", "S1+1", "S2", "END"]);
+    expect(positionLabelsAt(positions, 11)).toEqual(["S2"]);
+    expect(positionLabelsAt(positions, 7)).toEqual([]);
+    expect(namedPositions(undefined)).toEqual([]);
+  });
+
+  it("label both ends of a read cell", () => {
+    const tokens = Array.from({ length: 16 }, (_, i) => ` t${i}`);
+    const weights = tokens.map((_, q) => tokens.map((_, k) => (k <= q ? 1 / (q + 1) : 0)));
+    const cell = readCell({ experimentId: "e", nodeId: "n", promptId: "p", tokens, weights, positions }, null, 15, 5);
+    expect(cell.queryLabels).toEqual(["END"]);
+    expect(cell.sourceLabels).toEqual(["IO"]);
   });
 });

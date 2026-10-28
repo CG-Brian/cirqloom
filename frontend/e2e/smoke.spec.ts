@@ -278,3 +278,40 @@ test("measured bundle: clicking a ribbon in 3D opens that relation", async ({ pa
   await expect(inspector.getByText("Only after the Name Mover heads are knocked out.")).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("measured bundle: IOI prompt heatmap labels positions and relations show aligned attention", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/");
+  await page.getByLabel("Experiment").selectOption("ioi_templates_v1:BABA-t00");
+  await headButton(page, "L9H9").click();
+
+  const inspector = page.getByRole("complementary", { name: "Head inspector" });
+  await expect(inspector.getByTestId("heatmap-prompt")).toContainText(" to”");
+  await expect(inspector.getByText(/^ioi_end_to_io_attention/)).toBeVisible();
+  await expect(inspector.getByTestId("published-vs-measured")).toContainText("do not test");
+
+  // Hover END → IO: the readout names both positions.
+  const view = loadGpt2View();
+  const att = JSON.parse(readFileSync(path.resolve(process.cwd(), "../data/bundles/gpt2-small/assets/ioi_templates_v1-BABA-t00.tokens.json"), "utf8"));
+  const { IO, END } = att.prompts[0].positions as { IO: number; END: number };
+  const seq = (att.prompts[0].token_ids as number[]).length;
+  const map = inspector.getByRole("img", { name: new RegExp(`${seq} by ${seq}`) });
+  await map.scrollIntoViewIfNeeded();
+  const box = (await map.boundingBox())!;
+  const cell = box.width / seq;
+  await page.mouse.move(box.x + (IO + 0.5) * cell, box.y + (END + 0.5) * cell);
+  await expect(inspector.getByTestId("heatmap-readout")).toContainText(`q ${END} END`);
+  await expect(inspector.getByTestId("heatmap-readout")).toContainText(`k ${IO} IO`);
+  expect(view.edges).toHaveLength(27);
+
+  // The relation into Name Mover queries lines up senders and receivers at END.
+  const sidebar = page.getByRole("complementary", { name: "Circuits and heads" });
+  await sidebar.getByRole("button", { name: /^Indirect Object Identification \(IOI\)/ }).click();
+  await sidebar.getByRole("list", { name: "Circuit relations" })
+    .getByRole("button", { name: /^S-Inhibition heads → Name Mover queries/ }).click();
+  const relation = page.getByRole("complementary", { name: "Relation inspector" });
+  const table = relation.getByTestId("attention-alignment").getByRole("table");
+  await expect(table.getByRole("row")).toHaveCount(8);
+  await expect(relation.getByTestId("attention-alignment")).toContainText("does not show information passing");
+  expect(errors).toEqual([]);
+});

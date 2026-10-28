@@ -17,6 +17,7 @@ import numpy as np
 
 from cirqloom_analysis.capture.runner import ExperimentRun, unflatten_heads
 from cirqloom_analysis.models.base import AdapterInfo
+from cirqloom_analysis.prompts.ioi import IOI_SUITE
 from cirqloom_analysis.prompts.repeated import CONTROL_SUITE, REPEATED_SUITE
 from cirqloom_analysis.published.base import PublishedCircuit
 from cirqloom_analysis.schema.bundle import (
@@ -36,12 +37,36 @@ from cirqloom_analysis.schema.validation import head_node_id
 SCORE_DECIMALS = 6
 ATTENTION_PROMPT_INDEX = 0  # which prompt of each experiment gets a stored attention matrix
 
-SUITE_KIND = {REPEATED_SUITE: "measurement", CONTROL_SUITE: "control"}
+SUITE_KIND = {REPEATED_SUITE: "measurement", CONTROL_SUITE: "control", IOI_SUITE: "measurement"}
 SUITE_DESCRIPTION = {
     REPEATED_SUITE: "(BOS, X, X): X is {L} random tokens repeated once.",
     CONTROL_SUITE: "(BOS, X, Y): same BOS and X as the repeated suite, then {L} fresh random "
     "tokens. Control: no repetition.",
+    IOI_SUITE: "IOI template {group} (Wang et al. 2022, Appendix E), e.g. \"{text}\". Names, "
+    "place and object vary per prompt; positions IO, S1, S1+1, S2, END are the same for all.",
 }
+
+
+def describe_experiment(run: ExperimentRun) -> str:
+    first = run.prompts[0]
+    return SUITE_DESCRIPTION[run.suite].format(L=first.repeat_len, group=first.group,
+                                               text=first.text)
+
+
+def tokens_entry(prompt, strings: list[str]) -> dict:
+    """One prompt in the tokens file. Text and positions only for prompts that have them, so
+    repeated-token files stay byte-identical."""
+    entry = {
+        "id": prompt.id,
+        "seed": prompt.seed,
+        "token_ids": [int(i) for i in prompt.token_ids],
+        "tokens": strings,
+    }
+    if prompt.text is not None:
+        entry["text"] = prompt.text
+    if prompt.positions is not None:
+        entry["positions"] = dict(prompt.positions)
+    return entry
 
 
 def _round(value: float) -> float:
@@ -135,7 +160,6 @@ def build_measured_bundle(
     for run in runs:
         if run.suite not in SUITE_KIND:
             raise ValueError(f"no export description for suite {run.suite!r}")
-        repeat_len = run.prompts[0].repeat_len
         seq = run.patterns.shape[-1]
         slug = asset_slug(run.experiment_id)
 
@@ -143,15 +167,7 @@ def build_measured_bundle(
         assets[tokens_uri] = _dump_json(
             {
                 "experiment_id": run.experiment_id,
-                "prompts": [
-                    {
-                        "id": p.id,
-                        "seed": p.seed,
-                        "token_ids": [int(i) for i in p.token_ids],
-                        "tokens": token_strings(p.token_ids),
-                    }
-                    for p in run.prompts
-                ],
+                "prompts": [tokens_entry(p, token_strings(p.token_ids)) for p in run.prompts],
             }
         )
 
@@ -169,7 +185,7 @@ def build_measured_bundle(
                 id=run.experiment_id,
                 prompt_suite=run.suite,
                 kind=SUITE_KIND[run.suite],
-                description=SUITE_DESCRIPTION[run.suite].format(L=repeat_len),
+                description=describe_experiment(run),
                 seeds=[p.seed for p in run.prompts],
                 sequence_length=seq,
                 tokens_uri=tokens_uri,

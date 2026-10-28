@@ -28,7 +28,7 @@ data/bundles/gpt2-small/              manifest.json, graph.json, assets/, README
 
 ## Analysis pipeline
 
-`build_gpt2_bundle.py`: `GPT2Adapter` (pinned revision, checks 12×12 / n_ctx / vocab / BOS after loading) → for each length, `build_suite` for the repeated and control suites → `run_experiment` (one batch per experiment, `run_attention` validates token ids before and attention after the model, every registered detector that accepts the suite scores it) → `compare` (control report) → `import_ioi` (published annotations, no model involved; refuses any model but GPT-2 Small) → `build_measured_bundle` (adds published circuits as given; they never change observations, masks or assets) → `write_bundle` → re-read and `validate_bundle_files`. Detectors see heads on one flat axis (`layer * n_heads + head`); `unflatten_heads` is the only place that undoes it.
+`build_gpt2_bundle.py`: `GPT2Adapter` (pinned revision, checks 12×12 / n_ctx / vocab / BOS after loading) → for each length, `build_suite` for the repeated and control suites → `run_experiment` (one batch per experiment, `run_attention` validates token ids before and attention after the model, every registered detector that accepts the suite scores it) → `compare` (control report) → IOI experiments (`build_ioi_suite`: templates, tokenizer-checked positions; `run_experiment` fills position-reading detectors from the prompts' shared positions) → `import_ioi` (published annotations, no model involved; refuses any model but GPT-2 Small) → `build_measured_bundle` (adds published circuits as given; they never change observations, masks or assets) → `write_bundle` → re-read and `validate_bundle_files`. Detectors see heads on one flat axis (`layer * n_heads + head`); `unflatten_heads` is the only place that undoes it.
 
 ## Data flow in the app
 
@@ -51,9 +51,9 @@ The camera is driven by events, not state: `resetCamera()` bumps a nonce in the 
 
 ## Bundle format
 
-- `manifest.json`: schema version (1.3.0), bundle id, `synthetic_fixture` flag, display warning, model info, experiments (suite, kind, seeds, length, tokens file, optional attention asset), provenance (including an `environment` map), and `graph_uri`.
+- `manifest.json`: schema version (1.4.0), bundle id, `synthetic_fixture` flag, display warning, model info, experiments (suite, kind, seeds, length, tokens file, optional attention asset), provenance (including an `environment` map), and `graph_uri`.
 - `graph.json`: nodes, observations (with `parameters`, `score_std`, `per_example_scores`), masks (the `[q, k]` cells each detector averaged per experiment, see [ADR 0003](adr/0003-detector-masks-schema-1-2.md)), circuits (with role definitions and an origin: `published`, `measured_reconstruction` or `synthetic_fixture`), memberships (with an optional note), and evidence-typed edges: endpoints are a head, a role group or `logits`/`embed`, with channel, token positions, evidence kind and provenance, stored at the granularity the evidence was measured at (see [ADR 0004](adr/0004-circuit-edges-schema-1-3.md)).
-- `assets/*.tokens.json`: every prompt of one experiment, ids and display strings (leading spaces kept).
+- `assets/*.tokens.json`: every prompt of one experiment, ids and display strings (leading spaces kept); text suites add the prompt `text` and named `positions` (schema 1.4.0, ADR 0005).
 - `assets/*.attention.f16`: one example prompt's attention for all heads, little-endian float16 `[layer, head, q, k]`. Fetched once per experiment on first head selection; the provider decodes only the selected head's slice.
 
 Schema rules shared by both languages: unknown keys are rejected, NaN and Infinity are rejected, `score` is `null` if and only if `status` is `"unavailable"`, and node ids are `model:{model}:head:L{layer}H{head}` (zero-based). See [ADR 0001](adr/0001-static-bundle-and-parallel-schemas.md).

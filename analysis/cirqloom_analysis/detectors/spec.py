@@ -78,6 +78,10 @@ class DetectorSpec:
     default_parameters: Mapping[str, int] = field(default_factory=dict)
     """Tunable settings and their defaults, e.g. {"burn_in": 2}. Only these may be overridden."""
 
+    position_parameters: Mapping[str, str] = field(default_factory=dict)
+    """build_mask parameters filled from the prompts' named positions, e.g.
+    {"query": "END", "key": "IO"}. The resolved integers are recorded like any parameter."""
+
     def __post_init__(self) -> None:
         # Fail when the spec is defined, not after a model run: a typo here would otherwise
         # surface only at export time, or silently reach the bundle.
@@ -107,11 +111,16 @@ class DetectorSpec:
         if self.maturity not in get_args(Maturity):
             problems.append(f"maturity must be one of {get_args(Maturity)}, got {self.maturity!r}")
 
-        # Check 3: the defaults must be accepted by build_mask(seq, **defaults).
+        # Check 3: defaults and position parameters must be accepted by build_mask.
+        overlap = sorted(self.default_parameters.keys() & self.position_parameters.keys())
+        if overlap:
+            problems.append(f"parameters {overlap} are both tunable and position-derived")
         try:
-            inspect.signature(self.build_mask).bind(0, **self.default_parameters)
+            inspect.signature(self.build_mask).bind(
+                0, **self.default_parameters, **{name: 0 for name in self.position_parameters}
+            )
         except TypeError as error:
-            problems.append(f"default_parameters do not fit build_mask: {error}")
+            problems.append(f"parameters do not fit build_mask: {error}")
 
         if problems:
             raise ValueError(f"invalid detector spec {self.id!r}: " + "; ".join(problems))
@@ -119,6 +128,9 @@ class DetectorSpec:
         # Freeze the defaults too: frozen=True alone would still allow mutating the dict.
         object.__setattr__(
             self, "default_parameters", MappingProxyType(dict(self.default_parameters))
+        )
+        object.__setattr__(
+            self, "position_parameters", MappingProxyType(dict(self.position_parameters))
         )
 
     def accepts_suite(self, suite: str) -> bool:
@@ -134,6 +146,20 @@ class DetectorSpec:
                 f"tunable: {sorted(self.default_parameters)}"
             )
         return {**self.default_parameters, **overrides}
+
+    def parameters_for(
+        self, positions: Mapping[str, int] | None, **overrides: int
+    ) -> dict[str, int]:
+        """resolve_parameters plus the position parameters read from the prompts' positions."""
+        parameters = self.resolve_parameters(**overrides)
+        if not self.position_parameters:
+            return parameters
+        missing = sorted(set(self.position_parameters.values()) - set(positions or {}))
+        if missing:
+            raise ValueError(f"detector {self.id!r} needs prompt positions {missing}")
+        assert positions is not None
+        return {**parameters,
+                **{name: int(positions[label]) for name, label in self.position_parameters.items()}}
 
     def mask(self, seq: int, **overrides: int) -> np.ndarray:
         """The mask for a sequence of length seq, with defaults plus any overrides."""

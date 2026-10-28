@@ -8,6 +8,7 @@ import {
   cellFromPoint,
   heatmapPixels,
   maskCellSet,
+  namedPositions,
   readCell,
   weightColor,
 } from "../features/attention/heatmapModel";
@@ -28,10 +29,11 @@ interface AttentionHeatmapProps {
 }
 
 const GUTTER = 22; // px for the destination-axis tick labels
+const NAMED_GUTTER = 40; // wider when named positions (e.g. "S1+1") label the rows
 const FALLBACK_SIZE = 300;
 
 function useWidth(ref: React.RefObject<HTMLElement | null>): number {
-  const [width, setWidth] = useState(FALLBACK_SIZE + GUTTER);
+  const [width, setWidth] = useState(FALLBACK_SIZE + NAMED_GUTTER);
   useEffect(() => {
     const el = ref.current;
     if (!el || typeof ResizeObserver === "undefined") {
@@ -72,7 +74,9 @@ export function AttentionHeatmap({ attention, mask, seed, promptCount }: Attenti
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const width = useWidth(wrapRef);
-  const size = Math.max(120, Math.floor(width - GUTTER));
+  const named = namedPositions(attention.positions);
+  const gutter = named.length > 0 ? NAMED_GUTTER : GUTTER;
+  const size = Math.max(120, Math.floor(width - gutter));
   const [cursor, setCursor] = useState<{ q: number; k: number } | null>(null);
 
   const maskSet = useMemo(() => (mask ? maskCellSet(mask.cellsQk, seq) : null), [mask, seq]);
@@ -160,17 +164,29 @@ export function AttentionHeatmap({ attention, mask, seed, promptCount }: Attenti
   };
 
   const readout = cursor ? readCell(attention, maskSet, cursor.q, cursor.k) : null;
-  const ticks = axisTicks(seq);
+  // Named positions replace nearby numeric ticks so labels never overlap.
+  const namedIndex = new Set(named.map(([, i]) => i));
+  const ticks = axisTicks(seq).filter((t) => ![...namedIndex].some((i) => Math.abs(i - t) <= 1));
+  const namedAt = new Map<number, string>();
+  for (const [label, i] of named) {
+    namedAt.set(i, namedAt.has(i) ? `${namedAt.get(i)}/${label}` : label);
+  }
   const pct = (i: number) => `${((i + 0.5) / seq) * 100}%`;
   const maskSummary = mask ? `; outlined: ${mask.cellsQk.length} cells averaged by ${mask.label}` : "";
 
   return (
     <div ref={wrapRef} className="w-full" data-testid="attention-heatmap">
-      <div className="mb-1 flex justify-between text-[10px] text-slate-500" style={{ paddingLeft: GUTTER }}>
+      {attention.text && (
+        <p className="mb-2 text-[11px] leading-snug text-slate-300" data-testid="heatmap-prompt">
+          <span className="text-slate-500">Prompt (seed {seed}): </span>“{attention.text}”
+          <span className="text-slate-500"> — the model would predict the next token after END.</span>
+        </p>
+      )}
+      <div className="mb-1 flex justify-between text-[10px] text-slate-500" style={{ paddingLeft: gutter }}>
         <span>source position k →</span>
       </div>
       <div className="flex">
-        <div className="relative shrink-0" style={{ width: GUTTER, height: size }} aria-hidden="true">
+        <div className="relative shrink-0" style={{ width: gutter, height: size }} aria-hidden="true">
           {ticks.map((t) => (
             <span
               key={t}
@@ -178,6 +194,15 @@ export function AttentionHeatmap({ attention, mask, seed, promptCount }: Attenti
               style={{ top: pct(t) }}
             >
               {t}
+            </span>
+          ))}
+          {[...namedAt].map(([i, label]) => (
+            <span
+              key={`n${i}`}
+              className="absolute right-1 -translate-y-1/2 font-mono text-[9px] font-semibold text-sky-300"
+              style={{ top: pct(i) }}
+            >
+              {label}
             </span>
           ))}
         </div>
@@ -190,6 +215,15 @@ export function AttentionHeatmap({ attention, mask, seed, promptCount }: Attenti
                 style={{ left: pct(t) }}
               >
                 {t}
+              </span>
+            ))}
+            {[...namedAt].map(([i, label]) => (
+              <span
+                key={`n${i}`}
+                className="absolute top-0 -translate-x-1/2 font-mono text-[9px] leading-none font-semibold text-sky-300"
+                style={{ left: pct(i) }}
+              >
+                {label}
               </span>
             ))}
           </div>
@@ -206,7 +240,7 @@ export function AttentionHeatmap({ attention, mask, seed, promptCount }: Attenti
           />
         </div>
       </div>
-      <div className="mt-0.5 text-[10px] text-slate-500" style={{ paddingLeft: GUTTER }}>
+      <div className="mt-0.5 text-[10px] text-slate-500" style={{ paddingLeft: gutter }}>
         ↑ rows: destination (query) position q
       </div>
 
@@ -217,7 +251,10 @@ export function AttentionHeatmap({ attention, mask, seed, promptCount }: Attenti
         {readout ? (
           <>
             <div>
-              q {readout.q} <span className="text-slate-100">“{readout.queryToken}”</span> ← k {readout.k}{" "}
+              q {readout.q}
+              {readout.queryLabels.length > 0 && <span className="text-sky-300"> {readout.queryLabels.join("/")}</span>}{" "}
+              <span className="text-slate-100">“{readout.queryToken}”</span> ← k {readout.k}
+              {readout.sourceLabels.length > 0 && <span className="text-sky-300"> {readout.sourceLabels.join("/")}</span>}{" "}
               <span className="text-slate-100">“{readout.sourceToken}”</span>
             </div>
             <div>
@@ -277,7 +314,7 @@ function HeatmapLegend({ mask }: { mask: HeatmapMask | null }) {
         <span className="inline-block h-2.5 w-2.5 rounded-sm border border-amber-400/90" aria-hidden="true" />
         {mask ? (
           <span>
-            {mask.cellsQk.length} cells averaged by <span className="font-mono text-slate-300">{mask.label}</span>;
+            {mask.cellsQk.length} cell{mask.cellsQk.length === 1 ? "" : "s"} averaged by <span className="font-mono text-slate-300">{mask.label}</span>;
             other cells are dimmed
           </span>
         ) : (

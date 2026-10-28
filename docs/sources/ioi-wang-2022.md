@@ -56,6 +56,11 @@ Figure 2 itself is a schematic: its arrows show which residual streams heads rea
 - Duplicate Token and Induction functions were only partly validated (§3.3, "Missing validations and caveats"). In this circuit the Induction Heads' output acts as a position signal, unlike the original induction-head description (p. 9).
 - The circuit reaches 87% of the full model's logit difference (faithfulness, §4), and Backup Name Movers show that faithfulness alone is incomplete (§3.4, §4.1).
 
+## IOI prompts (M3 step 4)
+
+- Templates: Figure 14 (p. 19) lists 15 templates; the official code's `BABA_TEMPLATES` (`easy_transformer/ioi_dataset.py` @ `e168301`) matches them word for word. ABBA versions swap the first `[B]` and `[A]`, as both the paper and the code do.
+- Word lists: the code's `NAMES` (99), `PLACES` (8) and `OBJECTS` (8). Appendix E says 100 names and 20 places/objects; the code's shorter lists are used. With GPT-2 every one is a single token after a space.
+
 ## Notes for Cirqloom (not claims from the paper)
 
 - Locally measured M1 scores agree with two classes: the induction detector's top heads include L5H5 and L6H9, and the previous-token detector's top head is L4H11. This is a correlation on our repeated-token suite. It does not verify the paper's IOI roles, and the two must stay separate in the UI.

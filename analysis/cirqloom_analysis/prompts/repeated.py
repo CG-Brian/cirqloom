@@ -22,6 +22,7 @@ vocabulary). Then the second copy has two earlier matches and an ideal induction
 legitimately attend to either; this slightly lowers induction scores and is left in as well.
 """
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 import numpy as np
@@ -39,13 +40,20 @@ _SALT = 20_221_000
 
 @dataclass(frozen=True)
 class Prompt:
-    """One generated input. token_ids is int64 [1 + 2 * repeat_len], BOS first."""
+    """One generated input, BOS first. Repeated-token prompts are int64 [1 + 2 * repeat_len].
+
+    Text suites (IOI) also carry the text, the named token positions every detector of that
+    suite reads (e.g. {"IO": 4, "S2": 12, "END": 15}), and the experiment group they belong to.
+    """
 
     id: str
     suite: str
     repeat_len: int
     seed: int
     token_ids: np.ndarray
+    text: str | None = None
+    positions: Mapping[str, int] | None = None
+    group: str | None = None
 
 
 def _check(repeat_len: int, seed: int, info: AdapterInfo) -> None:

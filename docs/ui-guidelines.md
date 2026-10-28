@@ -61,6 +61,13 @@ The 3D ring and the sidebar's `RoleMarker` use the same style.
 - Hover (3D or the sidebar list) emphasises the relation and the heads its evidence is about (sender heads, receiving group members); everything else recedes. Click opens the **Relation inspector** in place of the head inspector: sender, receiver, channel, positions, effect (the sender's own contribution), conditions, magnitude, a granularity statement, citation and locator, every original evidence record (with "Inspect head"), and what the ribbon does not show. A head's inspector lists the relations it takes part in.
 - The sidebar's "Relations" list is the keyboard path to every ribbon. Escape or an empty-space click clears the selection.
 
+## Observed attention alignment (relation inspector)
+
+- Section "Observed attention (measured here)", badge Experimental, below the published claim and its source.
+- On the selected experiment's stored prompt, one row per sender head at the relation's sender position and one row per receiving member at its receiver position (none for relations into `logits`). One column per named position. Cells use the heatmap's colour scale; positions after the query show "—", never 0.
+- If the selected experiment lacks the positions, buttons offer the experiments whose prompts have them (from `loadExperimentPositions`).
+- The caption states that rows are separate observations: lining them up does not show information passing between heads, and attention does not verify a published role. Head names open the head inspector.
+
 ## Inspector sections
 
 1. **Identity:** stable id, model, revision ("none — no weights loaded" for fixtures), layer and head (zero-based).
@@ -74,6 +81,7 @@ The 3D ring and the sidebar's `RoleMarker` use the same style.
 
 - One head, one example prompt (the experiment's stored `prompt_index`). Row = destination (query) position q, column = source (key) position k, both labelled on the axes; tokens appear in the readout.
 - Colour: one fixed 0–1 scale for every head, with a legend. Never rescaled per head, so a weak head looks weak.
+- Text suites (IOI) show the prompt text above the map, label named positions (IO, S1, S1+1, S2, END) on both axes in place of nearby numeric ticks, and name them in the readout (`q 15 END " to" ← k 5 IO " Mary"`). Positions come from the tokens file; the UI never infers them.
 - Future cells (k > q) are hatched and read "not attendable": they are not weight 0.
 - Readout below the map: `q, query token ← k, source token`, the exact weight (float16, 3 significant digits), and "in mask". Hover or focus the map and use the arrow keys. Whitespace is visible (`␣`, `↵`, `⇥`).
 - Mask: "Show cells" on a detector row picks one detector (kept across heads and experiments). The map dims every cell outside that detector's exported mask and outlines mask cells when cells are at least 6 px. Only masks from the bundle are drawn; a missing mask is stated, never guessed. One mask at a time, so each outline belongs to one score.

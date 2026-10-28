@@ -4,10 +4,10 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-SchemaVersion = Literal["1.3.0"]
+SchemaVersion = Literal["1.4.0"]
 
 # Identifies the version of the data schema.
-SCHEMA_VERSION: SchemaVersion = "1.3.0"
+SCHEMA_VERSION: SchemaVersion = "1.4.0"
 
 # Indicates the validation or publication status of evidence.
 EvidenceStatus = Literal["published",
@@ -229,6 +229,10 @@ class TokenizedPrompt(StrictModel):
     seed: int
     token_ids: list[int]
     tokens: list[str]  # display string per id, leading spaces kept
+    # Text suites only (e.g. IOI); absent for random-token prompts, so their files are unchanged.
+    text: str | None = None
+    # Named token positions decided and checked by the prompt builder, e.g. {"IO": 5, "END": 15}.
+    positions: dict[str, int] | None = None
 
 
 class TokensFile(StrictModel):

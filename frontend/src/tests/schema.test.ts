@@ -77,6 +77,13 @@ describe("bundle contract shared with Python", () => {
       expect(tokens.experiment_id).toBe(experiment.id);
       expect(tokens.prompts.map((p) => p.seed)).toEqual(experiment.seeds);
     }
+    // IOI experiments: every prompt carries the same named positions; repeated ones carry none.
+    for (const experiment of manifest.experiments) {
+      const tokens = TokensFileSchema.parse(loadJson(experiment.tokens_uri, MEASURED_DIR));
+      const positions = tokens.prompts.map((p) => JSON.stringify(p.positions ?? null));
+      expect(new Set(positions).size).toBe(1);
+      expect(positions[0] !== "null").toBe(experiment.prompt_suite === "ioi_templates_v1");
+    }
     // Every observation is labelled experimental: nothing in the bundle claims more.
     expect(new Set(graph.observations.map((o) => o.status))).toEqual(new Set(["experimental"]));
     // One mask per (experiment, detector) that has observations.

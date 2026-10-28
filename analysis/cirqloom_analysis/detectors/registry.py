@@ -11,6 +11,7 @@ from collections.abc import Iterator
 from cirqloom_analysis.detectors.first_token import first_token_mask
 from cirqloom_analysis.detectors.induction import induction_mask_for_seq
 from cirqloom_analysis.detectors.masks import DEFAULT_BURN_IN
+from cirqloom_analysis.detectors.position_pair import position_pair_mask
 from cirqloom_analysis.detectors.previous_token import previous_token_mask
 from cirqloom_analysis.detectors.spec import DetectorSpec
 
@@ -96,4 +97,44 @@ def default_registry() -> DetectorRegistry:
             build_mask=induction_mask_for_seq,
         )
     )
+    for spec in IOI_POSITION_DETECTORS:
+        registry.register(spec)
     return registry
+
+
+IOI_PAPER = "https://arxiv.org/abs/2211.00593"
+IOI_SUITE = "ioi_templates_v1"
+
+
+def _ioi(id_: str, query: str, key: str, description: str) -> DetectorSpec:
+    return DetectorSpec(
+        id=id_,
+        version="1.0.0",
+        evidence_type="heuristic_attention",
+        method_reference=IOI_PAPER,
+        description=description,
+        prompt_suite=IOI_SUITE,
+        build_mask=position_pair_mask,
+        position_parameters={"query": query, "key": key},
+    )
+
+
+# Attention between IOI positions (AGENTS.md §7.6: observations, never role verification).
+# The paper describes these patterns for its classes; a high score here does not show that a
+# head has that role, copies anything, or affects the output.
+IOI_POSITION_DETECTORS = (
+    _ioi("ioi_end_to_io_attention", "END", "IO",
+         "Attention from END to the indirect object IO. The paper reports this pattern for Name "
+         "Mover heads; attention alone does not test that role."),
+    _ioi("ioi_end_to_s1_attention", "END", "S1",
+         "Attention from END to the first subject S1, for comparison with END → IO."),
+    _ioi("ioi_end_to_s2_attention", "END", "S2",
+         "Attention from END to the second subject S2. The paper reports this pattern for "
+         "S-Inhibition heads; attention alone does not test that role."),
+    _ioi("ioi_s2_to_s1_attention", "S2", "S1",
+         "Attention from S2 to S1. The paper reports this pattern for Duplicate Token heads; "
+         "attention alone does not test that role."),
+    _ioi("ioi_s2_to_s1plus1_attention", "S2", "S1+1",
+         "Attention from S2 to S1+1. The paper reports this pattern for Induction heads in IOI; "
+         "attention alone does not test that role."),
+)

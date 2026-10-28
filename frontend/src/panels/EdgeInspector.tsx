@@ -1,6 +1,7 @@
 // Right panel for one circuit relation (a visual edge group). Shows what the evidence says, at
 // the granularity it was measured at, and lists every original evidence record unchanged.
-import type { Edge } from "../data/schema";
+import type { DataProvider } from "../data/DataProvider";
+import type { Edge, Experiment, Manifest } from "../data/schema";
 import {
   CHANNEL_LABEL,
   edgeGroupLabel,
@@ -12,10 +13,15 @@ import {
 } from "../features/circuits/edgeGroups";
 import type { GraphView } from "../features/experiment/graphView";
 import { useExplorerStore } from "../features/selection/store";
+import { AttentionAlignment } from "./AttentionAlignment";
 import { CollapseButton, EvidenceBadge, OriginBadge, PanelSection } from "./ui";
 
 interface EdgeInspectorProps {
+  provider: DataProvider;
   view: GraphView;
+  manifest: Manifest;
+  /** Observed attention is shown for this experiment's stored prompt. */
+  experiment: Experiment | null;
   group: VisualEdgeGroup;
   collapsed: boolean;
   onToggleCollapsed: () => void;
@@ -64,7 +70,15 @@ function senderText(view: GraphView, edge: Edge): string {
   return `${endpointLabel(view, source)}${roles.length ? ` (${roles.join(", ")})` : ""}`;
 }
 
-export function EdgeInspector({ view, group, collapsed, onToggleCollapsed }: EdgeInspectorProps) {
+export function EdgeInspector({
+  provider,
+  view,
+  manifest,
+  experiment,
+  group,
+  collapsed,
+  onToggleCollapsed,
+}: EdgeInspectorProps) {
   const selectEdgeGroup = useExplorerStore((s) => s.selectEdgeGroup);
   const select = useExplorerStore((s) => s.select);
   const circuit = view.circuitById.get(group.circuitId);
@@ -171,6 +185,13 @@ export function EdgeInspector({ view, group, collapsed, onToggleCollapsed }: Edg
           ) : (
             <div className="text-xs text-slate-300">Method: {first.method_reference}</div>
           )}
+        </PanelSection>
+
+        <PanelSection
+          title="Observed attention (measured here)"
+          aside={<EvidenceBadge status="experimental" />}
+        >
+          <AttentionAlignment provider={provider} view={view} manifest={manifest} experiment={experiment} group={group} />
         </PanelSection>
 
         <PanelSection title={`Evidence records (${group.edges.length})`}>

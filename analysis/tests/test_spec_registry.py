@@ -7,6 +7,7 @@ import pytest
 from attention_helpers import previous_token_head, repeated_head, selected, sink_head
 
 from cirqloom_analysis.detectors.induction import induction_mask, induction_mask_for_seq
+from cirqloom_analysis.detectors.position_pair import position_pair_mask
 from cirqloom_analysis.detectors.previous_token import previous_token_mask
 from cirqloom_analysis.detectors.registry import DetectorRegistry, default_registry
 from cirqloom_analysis.detectors.scoring import masked_head_mean
@@ -156,17 +157,24 @@ def test_iterates_in_registration_order():
 # --- Default registry ------------------------------------------------------------------------
 
 
-def test_default_registry_has_the_three_m1_detectors():
+def test_default_registry_has_the_m1_and_ioi_position_detectors():
     registry = default_registry()
     assert registry.ids() == [
         "previous_token_attention",
         "first_token_attention",
         "induction_attention",
+        "ioi_end_to_io_attention",
+        "ioi_end_to_s1_attention",
+        "ioi_end_to_s2_attention",
+        "ioi_s2_to_s1_attention",
+        "ioi_s2_to_s1plus1_attention",
     ]
     for spec in registry:
         assert spec.evidence_type == "heuristic_attention"
         assert spec.maturity == "experimental"  # no real-model controls have run yet
-        assert spec.prompt_suite == "repeated_tokens_v1"
+    suites = {spec.id: spec.prompt_suite for spec in registry}
+    assert {s for i, s in suites.items() if not i.startswith("ioi_")} == {"repeated_tokens_v1"}
+    assert {s for i, s in suites.items() if i.startswith("ioi_")} == {"ioi_templates_v1"}
 
 
 def test_default_registry_is_fresh_each_call():
@@ -197,6 +205,45 @@ def test_every_detector_runs_through_one_call_shape(repeat_len):
         own = masked_head_mean(ideal_head, spec.mask(seq)).per_example.item()
         assert own == 1.0, detector_id
         for other in registry:
-            if other.id != detector_id:
+            if other.id != detector_id and other.prompt_suite == "repeated_tokens_v1":
                 score = masked_head_mean(ideal_head, other.mask(seq)).per_example.item()
                 assert score < 1.0, (detector_id, other.id)
+
+
+# --- Position-pair detectors (IOI) -----------------------------------------------------------
+
+IOI_POSITIONS = {"IO": 5, "S1": 3, "S1+1": 4, "S2": 11, "END": 15}
+
+
+def test_position_detectors_read_their_cell_from_the_prompt_positions():
+    registry = default_registry()
+    expected = {
+        "ioi_end_to_io_attention": (15, 5),
+        "ioi_end_to_s1_attention": (15, 3),
+        "ioi_end_to_s2_attention": (15, 11),
+        "ioi_s2_to_s1_attention": (11, 3),
+        "ioi_s2_to_s1plus1_attention": (11, 4),
+    }
+    for detector_id, cell in expected.items():
+        spec = registry.get(detector_id)
+        parameters = spec.parameters_for(IOI_POSITIONS)
+        assert parameters == {"query": cell[0], "key": cell[1]}
+        assert selected(spec.build_mask(16, **parameters)) == [cell]
+
+
+def test_position_detectors_need_positions_and_reject_future_cells():
+    spec = default_registry().get("ioi_end_to_io_attention")
+    with pytest.raises(ValueError, match="needs prompt positions"):
+        spec.parameters_for(None)
+    with pytest.raises(ValueError, match="needs prompt positions"):
+        spec.parameters_for({"END": 15})
+    with pytest.raises(ValueError, match="key <= query"):
+        position_pair_mask(16, query=3, key=5)
+    with pytest.raises(ValueError, match="query < seq"):
+        position_pair_mask(16, query=16, key=5)
+
+
+def test_spec_rejects_a_parameter_that_is_both_tunable_and_position_derived():
+    with pytest.raises(ValueError, match="both tunable and position-derived"):
+        make_spec(build_mask=lambda seq, *, query=0: np.zeros((seq, seq), bool),
+                  default_parameters={"query": 1}, position_parameters={"query": "END"})

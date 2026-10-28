@@ -145,6 +145,180 @@
       ],
       "sequence_length": 101,
       "tokens_uri": "assets/nonrepeated_tokens_v1-L50.tokens.json"
+    },
+    {
+      "attention": {
+        "dtype": "float16",
+        "prompt_index": 0,
+        "shape": [
+          12,
+          12,
+          16,
+          16
+        ],
+        "uri": "assets/ioi_templates_v1-BABA-t00.attention.f16"
+      },
+      "description": "IOI template BABA-t00 (Wang et al. 2022, Appendix E), e.g. \"Then, Andrew and Thomas went to the house. Andrew gave a computer to\". Names, place and object vary per prompt; positions IO, S1, S1+1, S2, END are the same for all.",
+      "id": "ioi_templates_v1:BABA-t00",
+      "kind": "measurement",
+      "prompt_suite": "ioi_templates_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 16,
+      "tokens_uri": "assets/ioi_templates_v1-BABA-t00.tokens.json"
+    },
+    {
+      "attention": {
+        "dtype": "float16",
+        "prompt_index": 0,
+        "shape": [
+          12,
+          12,
+          16,
+          16
+        ],
+        "uri": "assets/ioi_templates_v1-ABBA-t00.attention.f16"
+      },
+      "description": "IOI template ABBA-t00 (Wang et al. 2022, Appendix E), e.g. \"Then, Amy and Shannon went to the hospital. Shannon gave a kiss to\". Names, place and object vary per prompt; positions IO, S1, S1+1, S2, END are the same for all.",
+      "id": "ioi_templates_v1:ABBA-t00",
+      "kind": "measurement",
+      "prompt_suite": "ioi_templates_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 16,
+      "tokens_uri": "assets/ioi_templates_v1-ABBA-t00.tokens.json"
+    },
+    {
+      "attention": {
+        "dtype": "float16",
+        "prompt_index": 0,
+        "shape": [
+          12,
+          12,
+          15,
+          15
+        ],
+        "uri": "assets/ioi_templates_v1-BABA-t05.attention.f16"
+      },
+      "description": "IOI template BABA-t05 (Wang et al. 2022, Appendix E), e.g. \"After Kimberly and Stephanie went to the garden, Kimberly gave a computer to\". Names, place and object vary per prompt; positions IO, S1, S1+1, S2, END are the same for all.",
+      "id": "ioi_templates_v1:BABA-t05",
+      "kind": "measurement",
+      "prompt_suite": "ioi_templates_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 15,
+      "tokens_uri": "assets/ioi_templates_v1-BABA-t05.tokens.json"
+    },
+    {
+      "attention": {
+        "dtype": "float16",
+        "prompt_index": 0,
+        "shape": [
+          12,
+          12,
+          15,
+          15
+        ],
+        "uri": "assets/ioi_templates_v1-ABBA-t05.attention.f16"
+      },
+      "description": "IOI template ABBA-t05 (Wang et al. 2022, Appendix E), e.g. \"After Justin and Stephen went to the hospital, Stephen gave a ring to\". Names, place and object vary per prompt; positions IO, S1, S1+1, S2, END are the same for all.",
+      "id": "ioi_templates_v1:ABBA-t05",
+      "kind": "measurement",
+      "prompt_suite": "ioi_templates_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 15,
+      "tokens_uri": "assets/ioi_templates_v1-ABBA-t05.tokens.json"
+    },
+    {
+      "attention": {
+        "dtype": "float16",
+        "prompt_index": 0,
+        "shape": [
+          12,
+          12,
+          18,
+          18
+        ],
+        "uri": "assets/ioi_templates_v1-BABA-t06.attention.f16"
+      },
+      "description": "IOI template BABA-t06 (Wang et al. 2022, Appendix E), e.g. \"When Cody and Nicholas got a necklace at the school, Cody decided to give it to\". Names, place and object vary per prompt; positions IO, S1, S1+1, S2, END are the same for all.",
+      "id": "ioi_templates_v1:BABA-t06",
+      "kind": "measurement",
+      "prompt_suite": "ioi_templates_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 18,
+      "tokens_uri": "assets/ioi_templates_v1-BABA-t06.tokens.json"
+    },
+    {
+      "attention": {
+        "dtype": "float16",
+        "prompt_index": 0,
+        "shape": [
+          12,
+          12,
+          18,
+          18
+        ],
+        "uri": "assets/ioi_templates_v1-ABBA-t06.attention.f16"
+      },
+      "description": "IOI template ABBA-t06 (Wang et al. 2022, Appendix E), e.g. \"When Benjamin and Kenneth got a necklace at the garden, Kenneth decided to give it to\". Names, place and object vary per prompt; positions IO, S1, S1+1, S2, END are the same for all.",
+      "id": "ioi_templates_v1:ABBA-t06",
+      "kind": "measurement",
+      "prompt_suite": "ioi_templates_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 18,
+      "tokens_uri": "assets/ioi_templates_v1-ABBA-t06.tokens.json"
     }
   ],
   "graph_uri": "graph.json",
@@ -172,8 +346,8 @@
     },
     "generator": "analysis/scripts/build_gpt2_bundle.py",
     "generator_version": "1",
-    "notes": "Measured here: attention-pattern detectors on repeated random tokens, with a paired non-repeated control; every score is 'experimental' (heuristic attention, not causal evidence). Published, not measured here: the IOI circuit of Wang et al. (2022), imported from reviewed annotations. Repeated-token scores do not test any head's IOI role."
+    "notes": "Measured here: attention-pattern detectors on repeated random tokens, with a paired non-repeated control, and attention between named positions on IOI prompts built from the paper's templates; every score is 'experimental' (heuristic attention, not causal evidence). Published, not measured here: the IOI circuit of Wang et al. (2022), imported from reviewed annotations. No measured score verifies a published role."
   },
-  "schema_version": "1.3.0",
+  "schema_version": "1.4.0",
   "synthetic_fixture": false
 }

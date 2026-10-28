@@ -76,4 +76,17 @@ describe("StaticBundleProvider.loadHeadAttention", () => {
       provider.loadHeadAttention(EXPERIMENT, "model:gpt2-small:head:L12H0"),
     ).rejects.toBeInstanceOf(AttentionUnavailableError);
   });
+
+  it("returns the IOI prompt text and its named positions with the attention", async () => {
+    const provider = new StaticBundleProvider({ "gpt2-small": BUNDLE });
+    const att = await provider.loadHeadAttention("ioi_templates_v1:BABA-t00", "model:gpt2-small:head:L9H9");
+    expect(att.text).toMatch(/ to$/);
+    expect(Object.keys(att.positions!).sort()).toEqual(["END", "IO", "S1", "S1+1", "S2"]);
+    const { IO, S1, S2, END } = att.positions!;
+    expect(att.tokens[S1!]).toBe(att.tokens[S2!]);
+    expect(att.tokens[IO!]).not.toBe(att.tokens[S1!]);
+    expect(att.tokens[END!]).toBe(" to");
+    expect(await provider.loadExperimentPositions("ioi_templates_v1:BABA-t00")).toEqual(att.positions);
+    expect(await provider.loadExperimentPositions("repeated_tokens_v1:L10")).toBeNull();
+  });
 });

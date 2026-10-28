@@ -112,9 +112,33 @@ export function axisTicks(seq: number): number[] {
   return ticks;
 }
 
+/** Display order for named positions; unknown names follow alphabetically. */
+const POSITION_ORDER = ["IO", "S1", "S1+1", "S2", "END"];
+
+/** Named positions as [label, index] pairs, in a stable display order. */
+export function namedPositions(positions: Record<string, number> | undefined): [string, number][] {
+  const rank = (label: string) => {
+    const i = POSITION_ORDER.indexOf(label);
+    return i < 0 ? POSITION_ORDER.length : i;
+  };
+  return Object.entries(positions ?? {}).sort(
+    ([a], [b]) => rank(a) - rank(b) || a.localeCompare(b),
+  );
+}
+
+/** Labels at one index, e.g. "S1+1" or "S2". */
+export function positionLabelsAt(positions: Record<string, number> | undefined, index: number): string[] {
+  return namedPositions(positions)
+    .filter(([, i]) => i === index)
+    .map(([label]) => label);
+}
+
 export interface CellReadout {
   q: number;
   k: number;
+  /** Named positions of the query and source cells (IOI: IO, S1, S1+1, S2, END). */
+  queryLabels: string[];
+  sourceLabels: string[];
   queryToken: string;
   sourceToken: string;
   /** null for a future cell: not attendable, which is not the same as weight 0. */
@@ -127,6 +151,8 @@ export function readCell(attention: HeadAttention, mask: Set<number> | null, q: 
   return {
     q,
     k,
+    queryLabels: positionLabelsAt(attention.positions, q),
+    sourceLabels: positionLabelsAt(attention.positions, k),
     queryToken: displayToken(attention.tokens[q] ?? ""),
     sourceToken: displayToken(attention.tokens[k] ?? ""),
     weight: k > q ? null : (attention.weights[q]?.[k] ?? null),

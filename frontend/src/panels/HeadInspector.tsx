@@ -141,7 +141,17 @@ export function HeadInspector({
   const selectEdgeGroup = useExplorerStore((s) => s.selectEdgeGroup);
   const selectedGroup = edgeGroups.find((g) => g.id === selectedEdgeGroupId);
   if (selectedGroup) {
-    return <EdgeInspector view={view} group={selectedGroup} collapsed={collapsed} onToggleCollapsed={onToggleCollapsed} />;
+    return (
+      <EdgeInspector
+        provider={provider}
+        view={view}
+        manifest={manifest}
+        experiment={experiment}
+        group={selectedGroup}
+        collapsed={collapsed}
+        onToggleCollapsed={onToggleCollapsed}
+      />
+    );
   }
   const node = selectedNodeId === null ? undefined : view.nodeById.get(selectedNodeId);
 
@@ -318,7 +328,7 @@ export function HeadInspector({
                       className="mt-2 rounded border border-sky-400/20 px-2 py-1.5 text-[10px] leading-snug text-slate-400"
                     >
                       These scores were measured here on <span className="font-mono">{experiment.prompt_suite}</span>{" "}
-                      prompts. They do not test this head&apos;s published role
+                      prompts. They are attention patterns and do not test this head&apos;s published role
                       {evidence.published.length === 1 ? "" : "s"} (
                       {evidence.published.map((p) => `${p.roleLabel} in ${p.circuit.name}`).join("; ")}), which
                       come from the cited paper.

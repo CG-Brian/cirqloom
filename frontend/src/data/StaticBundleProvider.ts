@@ -153,7 +153,26 @@ export class StaticBundleProvider implements DataProvider {
     const weights = Array.from({ length: rows }, (_, q) =>
       Array.from(flat.subarray(q * cols, (q + 1) * cols)),
     );
-    return { experimentId, nodeId, promptId: prompt.id, tokens: prompt.tokens, weights };
+    return {
+      experimentId,
+      nodeId,
+      promptId: prompt.id,
+      tokens: prompt.tokens,
+      weights,
+      ...(prompt.text !== undefined && { text: prompt.text }),
+      ...(prompt.positions !== undefined && { positions: prompt.positions }),
+    };
+  }
+
+  async loadExperimentPositions(experimentId: string): Promise<Record<string, number> | null> {
+    const found = await this.findExperiment(experimentId);
+    if (!found) {
+      return null;
+    }
+    const url = `${this.basePath(found.modelId)}/${found.experiment.tokens_uri}`;
+    const tokensFile = await memo(this.tokenFiles, url, () => fetchJson(url, TokensFileSchema));
+    const index = found.experiment.attention?.prompt_index ?? 0;
+    return tokensFile.prompts[index]?.positions ?? null;
   }
 
   private async findExperiment(

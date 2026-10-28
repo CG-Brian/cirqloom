@@ -2,7 +2,7 @@
 
 An evidence-aware, interactive 3D atlas of attention heads and circuits in pretrained transformers, starting with GPT-2 Small.
 
-> **Status: M3 in progress (circuit-centric roadmap: IOI → Induction → Copy Suppression).** The verified IOI circuit (26 heads, 7 roles, 27 sourced relations) is in the default bundle and drawn as a 3D circuit graph with a relation inspector; IOI prompts and attention come next. The app opens a **measured GPT-2 Small bundle** by default: previous-token, first-token (BOS) and induction attention scores on repeated random tokens, with a paired non-repeated control. Every score is labelled `experimental`: it is a heuristic attention measurement, not causal evidence. No published circuits (IOI) are included yet. The synthetic demo fixture is still available at `?bundle=fixture`.
+> **Status: M3 in progress (circuit-centric roadmap: IOI → Induction → Copy Suppression).** The verified IOI circuit (26 heads, 7 roles, 27 sourced relations) is drawn as a 3D circuit graph, and GPT-2's attention on the paper's IOI prompts is measured alongside it (position-labelled heatmaps, aligned attention per relation). All measured scores are attention patterns, labelled experimental. The app opens a **measured GPT-2 Small bundle** by default: previous-token, first-token (BOS) and induction attention scores on repeated random tokens, with a paired non-repeated control. Every score is labelled `experimental`: it is a heuristic attention measurement, not causal evidence. No published circuits (IOI) are included yet. The synthetic demo fixture is still available at `?bundle=fixture`.
 
 ## What works today
 
@@ -14,6 +14,7 @@ An evidence-aware, interactive 3D atlas of attention heads and circuits in pretr
 - An attention heatmap for the selected head on one example prompt: row = destination, column = source, fixed 0–1 colour scale, hatched future cells, exact weight and both tokens on hover or arrow keys. "Show cells" on a detector outlines the exact cells its score averaged, exported by the Python pipeline.
 - A Python pipeline: GPT-2 adapter on TransformerLens `TransformerBridge` (pinned revision), deterministic prompt suites, numpy detectors, and a bundle exporter with lazily loaded float16 attention assets.
 - The published IOI circuit (Wang et al., 2022) as a 3D circuit graph: 7 role-group hubs above the layers, 8 evidence-typed ribbons bundling its 27 sourced records (stored at the paper's granularity: head → role group, one group → group, head → logits), Q/K/V channel labels, and a Relation inspector listing every record with its figure. The head inspector separates the paper's roles from our repeated-token scores.
+- IOI prompt experiments built from the paper's templates, with IO / S1 / S1+1 / S2 / END positions checked against the tokenizer: position-labelled heatmaps, five END/S2 attention observations per head, and an "observed attention" table in the relation inspector that lines up a relation's heads at their positions (observations only, not information flow).
 - A versioned bundle schema, defined in Python (Pydantic) and TypeScript (zod), with a cross-language contract test.
 
 ## Quickstart: frontend with the committed bundles
@@ -108,6 +109,7 @@ docs/       Architecture, scientific methods, UI guidelines, ADRs
 - [ADR 0002: measured bundles, schema 1.1.0](docs/adr/0002-measured-bundles-schema-1-1.md)
 - [ADR 0003: detector masks, schema 1.2.0](docs/adr/0003-detector-masks-schema-1-2.md)
 - [ADR 0004: evidence-typed circuit edges, schema 1.3.0](docs/adr/0004-circuit-edges-schema-1-3.md)
+- [ADR 0005: IOI prompts and named positions, schema 1.4.0](docs/adr/0005-ioi-prompts-and-positions-schema-1-4.md)
 - [Source record: IOI circuit (Wang et al., 2022)](docs/sources/ioi-wang-2022.md)
 
 ## Scientific stance

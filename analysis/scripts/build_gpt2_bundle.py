@@ -21,6 +21,7 @@ from cirqloom_analysis.export.bundle_writer import (
 )
 from cirqloom_analysis.export.measured import build_measured_bundle
 from cirqloom_analysis.models.gpt2 import GPT2Adapter
+from cirqloom_analysis.prompts.ioi import build_ioi_suite
 from cirqloom_analysis.prompts.repeated import CONTROL_SUITE, REPEATED_SUITE, build_suite
 from cirqloom_analysis.published.ioi.importer import import_ioi
 from cirqloom_analysis.schema.validation import validate_bundle
@@ -31,9 +32,10 @@ BUNDLE_ID = "gpt2-small:v2"
 GENERATOR = "analysis/scripts/build_gpt2_bundle.py"
 NOTES = (
     "Measured here: attention-pattern detectors on repeated random tokens, with a paired "
-    "non-repeated control; every score is 'experimental' (heuristic attention, not causal "
+    "non-repeated control, and attention between named positions on IOI prompts built from the "
+    "paper's templates; every score is 'experimental' (heuristic attention, not causal "
     "evidence). Published, not measured here: the IOI circuit of Wang et al. (2022), imported "
-    "from reviewed annotations. Repeated-token scores do not test any head's IOI role."
+    "from reviewed annotations. No measured score verifies a published role."
 )
 
 
@@ -50,6 +52,9 @@ def main() -> int:
     parser.add_argument("--lengths", type=int, nargs="+", default=[10, 25, 50])
     parser.add_argument("--seeds", type=int, default=8, help="prompts per experiment")
     parser.add_argument("--device", default="cpu")
+    parser.add_argument("--ioi-templates", type=int, nargs="+", default=[0, 5, 6],
+                        help="IOI template indices (Figure 14 order); each runs as BABA and ABBA")
+    parser.add_argument("--ioi-seeds", type=int, default=8, help="prompts per IOI experiment")
     args = parser.parse_args()
 
     adapter = GPT2Adapter(device=args.device, seed=0)
@@ -65,6 +70,13 @@ def main() -> int:
                                  registry)
         runs += [measured, control]
         comparisons += compare(measured, control, info.n_heads)
+
+    # IOI prompts: one experiment per template and pattern (same length and positions inside).
+    for index in args.ioi_templates:
+        for pattern in ("BABA", "ABBA"):
+            prompts = build_ioi_suite(index, pattern, list(range(args.ioi_seeds)),
+                                      adapter.tokenize, adapter.token_strings)
+            runs.append(run_experiment(adapter, prompts, registry))
 
     environment = {
         "python": platform.python_version(),
@@ -119,7 +131,8 @@ GPT-2 Small bundle: measured attention experiments and published circuit annotat
 apart by provenance and evidence status. Regenerate with:
 
     python analysis/scripts/build_gpt2_bundle.py --lengths {' '.join(map(str, args.lengths))} \\
-        --seeds {args.seeds} --device {args.device}
+        --seeds {args.seeds} --ioi-templates {' '.join(map(str, args.ioi_templates))} \\
+        --ioi-seeds {args.ioi_seeds} --device {args.device}
 
 ## What this is
 
@@ -127,9 +140,14 @@ apart by provenance and evidence status. Regenerate with:
 
 - Model: `{manifest.model.hf_id}` at revision `{manifest.model.revision}`
   ({manifest.model.layers} layers × {manifest.model.heads_per_layer} heads).
-- Detectors: previous-token, first-token (BOS) and induction attention masks
-  (`analysis/cirqloom_analysis/detectors/`). Scores are mean masked attention per prompt,
-  averaged over prompts (n = prompts, not cells). Status is `experimental` for every score.
+- Detectors: previous-token, first-token (BOS) and induction attention masks on repeated
+  tokens; on IOI prompts, attention between named positions (END→IO, END→S1, END→S2, S2→S1,
+  S2→S1+1). Scores are mean masked attention per prompt, averaged over prompts (n = prompts,
+  not cells). Status is `experimental` for every score. IOI attention scores are observations:
+  they do not verify the paper's roles (no copying, output or causal test is run).
+- IOI prompts: `analysis/cirqloom_analysis/prompts/ioi.py` (paper templates and the official
+  code's names, places and objects; every filler is one GPT-2 token; positions IO, S1, S1+1,
+  S2, END are checked against the tokenizer and stored in each tokens file).
 - Attention assets: one prompt per measurement experiment, float16
   `[layer, head, q, k]`. Weights from the GPT-2 model card license apply to the model; this
   bundle contains derived attention values only, no weights.

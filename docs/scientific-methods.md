@@ -1,6 +1,6 @@
 # Scientific methods
 
-## Current state (M1)
+## Current state (M3 step 4)
 
 Two bundles are committed:
 
@@ -30,11 +30,28 @@ Every observation has status `experimental`. A detector moves to `measured` only
 - **Head-side (unit tests):** ideal previous-token, sink and induction heads, uniform baseline and mixtures; each detector ranks its own head first, and the uniform baseline differs per detector and shrinks with sequence length.
 - **Input-side (real model, recorded in the bundle README, not judged in code):** on the committed run, the top induction heads at L = 25 and 50 (L5H5, L6H9, L7H10, L5H1, L7H2; scores about 0.78–0.94) drop to below 0.01 on the non-repeated control, while previous-token scores (L4H11 about 0.97–0.99) do not change. At L = 10, L10H7 also enters the induction top five (0.685, control 0.008); that is an attention pattern only, and is not read as evidence about its published copy-suppression role. First-token scores are high for many heads (median about 0.5) on both suites: an attention sink is common, so a BOS score alone says little.
 
+### IOI prompts and position detectors (M3 step 4, ADR 0005)
+
+- `ioi_templates_v1`: the 15 templates of Wang et al. (2022), Figure 14 (BABA), and their ABBA versions, filled with the official code's names, places and objects. Each prompt stops before the answer (last token " to" = END). Positions IO, S1, S1+1, S2 and END are found in the tokenizer's output and checked (IO once, S twice, one-token fillers, same positions for every prompt of an experiment), then stored in the tokens file. The committed bundle has templates 0, 5 and 6 × BABA/ABBA, with 8 prompts each.
+- Detectors (v1.0.0, `heuristic_attention`, `experimental`): the attention weight at one cell per prompt, averaged over prompts. The cells are END→IO, END→S1, END→S2, S2→S1 and S2→S1+1. The paper reports these patterns for Name Mover, S-Inhibition, Duplicate Token and Induction heads, but **a high score does not verify that role**: no copying, output or causal test is run.
+- What the committed run shows (mean over the six experiments; observation only):
+
+| Detector | Top heads (paper class in brackets, `-` = not a member) |
+| --- | --- |
+| END→IO | L10H7 0.81 (Negative NM), L9H9 0.79 (NM), L9H6 0.69 (NM), L11H10 0.68 (Negative NM), L10H0 0.42 (NM) |
+| END→S2 | L8H6 0.82, L7H9 0.52, L8H10 0.42 (all S-Inhibition), L9H7 0.28 (Backup NM), L8H5 0.26 (-) |
+| S2→S1 | L3H0 0.78 (Duplicate), **L1H11 0.72 (-)**, **L0H5 0.60 (-)**, L0H1 0.52 (Duplicate) |
+| S2→S1+1 | L5H5 0.87, L5H8 0.50, L6H9 0.23 (all Induction), L5H0 0.20 (-) |
+
+  The paper's heads are prominent, but non-members score high too (L1H11 and L0H5 on S2→S1). This is a concrete reason that attention alone cannot assign roles. Negative Name Movers attend to IO as strongly as Name Movers, and only their output (which is not measured here) tells them apart.
+
 ### Known caveats
 
 - X can contain the same token twice (about 2.5% of prompts at L = 50); an ideal induction head may then attend to either match, which slightly lowers its score.
 - Attention assets are float16 (about 3 significant digits) and cover one example prompt per measurement experiment. Scores are computed in float32 and rounded to 6 decimals.
 - These are attention patterns only. Whether a head copies (OV / logit attribution) is not measured yet.
+- IOI scores have no control suite yet (e.g. the paper's pABC prompts with three different names).
+- One stored prompt per experiment is drawn; scores average 8 prompts.
 
 ## Evidence vocabulary
 
