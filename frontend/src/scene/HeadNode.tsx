@@ -61,16 +61,24 @@ function arcGeometry(arc: number): TorusGeometry {
 interface HeadNodeProps {
   node: HeadView;
   overlay: CircuitOverlay | null;
+  /** Relation id → heads its evidence is about. */
+  edgeFocusSets: Map<string, Set<string>>;
 }
 
-export function HeadNode({ node, overlay }: HeadNodeProps) {
+export function HeadNode({ node, overlay, edgeFocusSets }: HeadNodeProps) {
   const isSelected = useExplorerStore((s) => s.selectedNodeId === node.id);
   const isHovered = useExplorerStore((s) => s.hoveredNodeId === node.id);
+  // A primitive, so a hover on a relation re-renders only heads whose focus actually changes.
+  const edgeFocus = useExplorerStore((s) => {
+    const focused = s.hoveredEdgeGroupId ?? s.selectedEdgeGroupId;
+    const heads = focused === null ? undefined : edgeFocusSets.get(focused);
+    return heads ? (heads.has(node.id) ? "involved" : "other") : null;
+  });
   const select = useExplorerStore((s) => s.select);
   const hover = useExplorerStore((s) => s.hover);
   const unhover = useExplorerStore((s) => s.unhover);
 
-  const style = getNodeDisplayStyle({ nodeId: node.id, isSelected, isHovered, overlay });
+  const style = getNodeDisplayStyle({ nodeId: node.id, isSelected, isHovered, overlay, edgeFocus });
   const { roleRing, selectionRing } = style;
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {

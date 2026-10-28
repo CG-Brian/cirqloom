@@ -223,6 +223,7 @@ export type Circuit = z.infer<typeof CircuitSchema>;
 export type Membership = z.infer<typeof MembershipSchema>;
 export type Observation = z.infer<typeof ObservationSchema>;
 export type Edge = z.infer<typeof EdgeSchema>;
+export type EdgeEvidenceKind = z.infer<typeof EdgeEvidenceKindSchema>;
 export type Endpoint = z.infer<typeof EndpointSchema>;
 export type DetectorMask = z.infer<typeof DetectorMaskSchema>;
 

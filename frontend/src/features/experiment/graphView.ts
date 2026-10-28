@@ -2,13 +2,14 @@
 import type {
   Circuit,
   DetectorMask,
+  Edge,
   EvidenceStatus,
   Graph,
   Manifest,
   Membership,
   Observation,
 } from "../../data/schema";
-import { boundsOf, headPosition, type Bounds, type Vec3 } from "../../scene/layout";
+import { headPosition, sceneBounds, type Bounds, type Vec3 } from "../../scene/layout";
 
 export interface HeadView {
   id: string;
@@ -43,6 +44,9 @@ export interface GraphView {
   detectors: DetectorSummary[];
   /** Cells each detector averaged, per experiment; look up with getDetectorMask. */
   masks: DetectorMask[];
+  /** Evidence-typed circuit relations, as stored (see features/circuits for drawing). */
+  edges: Edge[];
+  /** What the canonical camera frames: all heads plus the circuit band and logits. */
   bounds: Bounds;
 }
 
@@ -84,7 +88,8 @@ export function buildGraphView(manifest: Manifest, graph: Graph): GraphView {
     observationsByNode,
     detectors: summarizeDetectors(graph.observations),
     masks: graph.masks,
-    bounds: boundsOf(nodes.map((n) => n.position)),
+    edges: graph.edges,
+    bounds: sceneBounds(nodes.map((n) => n.position), layers, headsPerLayer),
   };
 }
 

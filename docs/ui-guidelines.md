@@ -21,7 +21,7 @@ Never:
 
 - recolour a whole head by category;
 - make heads glow, pulse or bloom;
-- draw edges between heads that the data does not contain;
+- draw edges between heads that the data does not contain, or expand a group relation into head pairs;
 - show a placeholder number or chart where data is missing.
 
 ## Role encoding
@@ -52,6 +52,14 @@ The 3D ring and the sidebar's `RoleMarker` use the same style.
 - The head list is one Tab stop with a roving tabindex. Arrow keys move and select, Home/End jump within a layer. Escape clears the selection anywhere.
 - 3D, list and inspector all read the same `selectedNodeId` from the store.
 - The hover tooltip is a DOM overlay outside the canvas. Do not use drei `<Html>` inside the canvas: under React 19 StrictMode it errors.
+
+## Circuit graph (relations)
+
+- Data → drawing: `Graph.edges` (stored at the granularity of their evidence) → `getVisualEdgeGroups` (bundles records that agree on circuit, sender kind, receiver, channel, evidence kind and status, locator, effect, conditions and positions; never edits or splits a record) → `getCircuitLayout` (hubs, curves, spokes) → `CircuitEdgeLayer`.
+- Role-group hubs float above the layer frames over the centroid of their members, in the role's colour and marker shape (circle → sphere, square → box, triangle → cone, diamond → octahedron). Senders that are a subset of a role get their own small neutral anchor over those heads. Faint dotted spokes link anchors to the heads they stand for (membership, not relations).
+- Ribbons are curves between anchors, above the model, ending with an arrow at the receiver. Line pattern encodes evidence: solid = published experiment, dashed = published schematic, thinner = weight composition, thicker = causal (ours), dotted = holds only under a condition. Colour stays neutral. Relations between the same two anchors are lifted apart. A channel label (Q, K, V, logits ±) sits at the middle.
+- Hover (3D or the sidebar list) emphasises the relation and the heads its evidence is about (sender heads, receiving group members); everything else recedes. Click opens the **Relation inspector** in place of the head inspector: sender, receiver, channel, positions, effect (the sender's own contribution), conditions, magnitude, a granularity statement, citation and locator, every original evidence record (with "Inspect head"), and what the ribbon does not show. A head's inspector lists the relations it takes part in.
+- The sidebar's "Relations" list is the keyboard path to every ribbon. Escape or an empty-space click clears the selection.
 
 ## Inspector sections
 

@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { DataProvider, HeadAttention } from "../data/DataProvider";
 import type { Experiment, Graph, Manifest } from "../data/schema";
+import { getVisualEdgeGroups, type VisualEdgeGroup } from "../features/circuits/edgeGroups";
 import { buildGraphView } from "../features/experiment/graphView";
 import { initialExplorerState, useExplorerStore } from "../features/selection/store";
 import { HeadInspector } from "../panels/HeadInspector";
@@ -26,10 +27,12 @@ function renderInspector(
   manifest: Manifest = fixture.manifest,
   experiment: Experiment | null = null,
   provider: DataProvider = stubProvider,
+  edgeGroups: VisualEdgeGroup[] = [],
 ) {
   return render(
     <HeadInspector
       provider={provider}
+      edgeGroups={edgeGroups}
       view={view}
       manifest={manifest}
       experiment={experiment}
@@ -329,5 +332,61 @@ describe("HeadInspector on the GPT-2 bundle with the published IOI circuit", () 
     useExplorerStore.setState({ selectedNodeId: "model:gpt2-small:head:L1H1" });
     renderInspector(measured.view, measured.manifest, repeatedL10);
     expect(screen.queryByTestId("published-vs-measured")).toBeNull();
+  });
+});
+
+describe("Relation inspector (IOI)", () => {
+  const measured = loadMeasured();
+  const groups = getVisualEdgeGroups(measured.view, "circuit:gpt2-small:ioi:wang-2022");
+  const groupWhere = (locator: string) => groups.find((g) => g.locator?.includes(locator))!;
+
+  it("opens for a selected relation and lists every original record with its locator", () => {
+    const fig4b = groupWhere("Figure 4b");
+    useExplorerStore.setState({ selectedEdgeGroupId: fig4b.id });
+    renderInspector(measured.view, measured.manifest, null, stubProvider, groups);
+    const panel = screen.getByRole("complementary", { name: "Relation inspector" });
+    expect(within(panel).getByText("S-Inhibition heads → Name Mover queries")).toBeInTheDocument();
+    expect(within(panel).getByText("Published experiment")).toBeInTheDocument();
+    expect(within(panel).getByText(/Where: §3\.2, Figure 4b/)).toBeInTheDocument();
+    const records = within(panel).getByRole("list", { name: "Evidence records" });
+    expect(within(records).getAllByRole("listitem")).toHaveLength(4);
+    for (const head of ["L7H3", "L7H9", "L8H6", "L8H10"]) {
+      expect(within(records).getByText(new RegExp(`^${head} \\(S-Inhibition\\) → Name Mover$`))).toBeInTheDocument();
+    }
+    expect(within(panel).getByTestId("relation-granularity")).toHaveTextContent(
+      "Measured one sender head at a time into the whole Name Mover group (queries). 4 records, one per sender head. The source reports no result for any single sender–receiver head pair",
+    );
+  });
+
+  it("states the group-level experiment and the knockout condition honestly", () => {
+    useExplorerStore.setState({ selectedEdgeGroupId: groupWhere("Figure 4c").id });
+    const { unmount } = renderInspector(measured.view, measured.manifest, null, stubProvider, groups);
+    expect(screen.getByTestId("relation-granularity")).toHaveTextContent(
+      "Measured with all S-Inhibition heads changed together into the whole Name Mover group (queries). One record.",
+    );
+    unmount();
+    useExplorerStore.setState({ selectedEdgeGroupId: groupWhere("Figure 15").id });
+    renderInspector(measured.view, measured.manifest, null, stubProvider, groups);
+    expect(screen.getByText("Only after the Name Mover heads are knocked out.")).toBeInTheDocument();
+    expect(screen.getByText(/Not recorded \(never read off a figure\)/)).toBeInTheDocument();
+  });
+
+  it("shows the sign of a negative head's own contribution, not of the patching effect", () => {
+    useExplorerStore.setState({ selectedEdgeGroupId: groups.find((g) => g.effect?.direction === "decrease")!.id });
+    renderInspector(measured.view, measured.manifest, null, stubProvider, groups);
+    expect(screen.getByText("The sender's own contribution decreases ioi logit difference.")).toBeInTheDocument();
+  });
+
+  it("goes from a record to its head, and from a head to its relations", () => {
+    useExplorerStore.setState({ selectedEdgeGroupId: groupWhere("Figure 4b").id });
+    renderInspector(measured.view, measured.manifest, null, stubProvider, groups);
+    fireEvent.click(screen.getAllByRole("button", { name: "Inspect head" })[0]!);
+    expect(useExplorerStore.getState()).toMatchObject({
+      selectedNodeId: "model:gpt2-small:head:L7H3",
+      selectedEdgeGroupId: null,
+    });
+    const relations = section("Relations in the shown circuit");
+    fireEvent.click(within(relations).getByRole("button", { name: "S-Inhibition group → Name Mover queries" }));
+    expect(useExplorerStore.getState().selectedEdgeGroupId).toBe(groupWhere("Figure 4c").id);
   });
 });

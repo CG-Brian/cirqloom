@@ -4,11 +4,13 @@
 import type { DataProvider } from "../data/DataProvider";
 import type { Experiment, Manifest, Observation } from "../data/schema";
 import { getDetectorMask } from "../features/attention/heatmapModel";
+import { edgeGroupLabel, edgeGroupsForHead, type VisualEdgeGroup } from "../features/circuits/edgeGroups";
 import { observationsForExperiment } from "../features/experiment/activeExperiment";
 import type { GraphView } from "../features/experiment/graphView";
 import { getHeadEvidence, type HeadMembership } from "../features/overlays/selectors";
 import { useExplorerStore } from "../features/selection/store";
 import { AttentionPanel } from "./AttentionPanel";
+import { EdgeInspector } from "./EdgeInspector";
 import {
   CollapseButton,
   EmptyNote,
@@ -24,6 +26,8 @@ interface HeadInspectorProps {
   manifest: Manifest;
   /** Observations and attention are shown for this experiment only. */
   experiment: Experiment | null;
+  /** The active circuit's relations; a selected one replaces the head view. */
+  edgeGroups: VisualEdgeGroup[];
   collapsed: boolean;
   onToggleCollapsed: () => void;
 }
@@ -127,11 +131,18 @@ export function HeadInspector({
   view,
   manifest,
   experiment,
+  edgeGroups,
   collapsed,
   onToggleCollapsed,
 }: HeadInspectorProps) {
   const selectedNodeId = useExplorerStore((s) => s.selectedNodeId);
+  const selectedEdgeGroupId = useExplorerStore((s) => s.selectedEdgeGroupId);
   const select = useExplorerStore((s) => s.select);
+  const selectEdgeGroup = useExplorerStore((s) => s.selectEdgeGroup);
+  const selectedGroup = edgeGroups.find((g) => g.id === selectedEdgeGroupId);
+  if (selectedGroup) {
+    return <EdgeInspector view={view} group={selectedGroup} collapsed={collapsed} onToggleCollapsed={onToggleCollapsed} />;
+  }
   const node = selectedNodeId === null ? undefined : view.nodeById.get(selectedNodeId);
 
   if (collapsed) {
@@ -221,6 +232,24 @@ export function HeadInspector({
                 </ul>
               )}
             </PanelSection>
+
+            {edgeGroupsForHead(view, edgeGroups, node.id).length > 0 && (
+              <PanelSection title="Relations in the shown circuit">
+                <ul className="space-y-1">
+                  {edgeGroupsForHead(view, edgeGroups, node.id).map((g) => (
+                    <li key={g.id}>
+                      <button
+                        type="button"
+                        onClick={() => selectEdgeGroup(g.id)}
+                        className="w-full rounded border border-slate-800 px-2 py-1 text-left text-[11px] text-slate-300 hover:border-slate-600"
+                      >
+                        {edgeGroupLabel(view, g)}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </PanelSection>
+            )}
 
             <PanelSection title="Published annotations">
               {evidence.published.length === 0 ? (

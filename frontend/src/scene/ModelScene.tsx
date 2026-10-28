@@ -1,10 +1,13 @@
 // The 3D canvas. Hover and selection are read per head, so they never re-render the scene root.
 import { Canvas } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
+import type { CircuitLayout } from "../features/circuits/circuitLayout";
+import { edgeGroupHeads, type VisualEdgeGroup } from "../features/circuits/edgeGroups";
 import type { GraphView } from "../features/experiment/graphView";
 import type { CircuitOverlay } from "../features/overlays/selectors";
 import { useExplorerStore } from "../features/selection/store";
 import { CameraController } from "./CameraController";
+import { CircuitEdgeLayer } from "./CircuitEdgeLayer";
 import { CLICK_SLOP_PX } from "./HeadNode";
 import { HoverTooltip } from "./HoverTooltip";
 import { CAMERA_FOV, canonicalCameraPose, layerX } from "./layout";
@@ -17,10 +20,23 @@ interface ModelSceneProps {
   view: GraphView;
   /** Computed once by the app from the store's active circuit and shared with the panels. */
   overlay: CircuitOverlay | null;
+  /** The active circuit's relations, bundled for drawing, and where they go. */
+  edgeGroups: VisualEdgeGroup[];
+  circuitLayout: CircuitLayout | null;
 }
 
-export function ModelScene({ view, overlay }: ModelSceneProps) {
+export function ModelScene({ view, overlay, edgeGroups, circuitLayout }: ModelSceneProps) {
   const select = useExplorerStore((s) => s.select);
+  const edgeFocusSets = useMemo(
+    () =>
+      new Map(
+        edgeGroups.map((g) => {
+          const { senders, receivers } = edgeGroupHeads(view, g);
+          return [g.id, new Set([...senders, ...receivers])];
+        }),
+      ),
+    [view, edgeGroups],
+  );
 
   // First-frame guess only; CameraController refits once the real canvas size is known.
   const initialPose = useMemo(() => canonicalCameraPose(view.bounds, 16 / 9), [view.bounds]);
@@ -74,10 +90,14 @@ export function ModelScene({ view, overlay }: ModelSceneProps) {
             headsPerLayer={view.headsPerLayer}
             nodes={nodes}
             overlay={overlay}
+            edgeFocusSets={edgeFocusSets}
           />
         ))}
+        {overlay && circuitLayout && (
+          <CircuitEdgeLayer view={view} groups={edgeGroups} layout={circuitLayout} />
+        )}
       </Canvas>
-      <HoverTooltip ref={tooltip} view={view} overlay={overlay} />
+      <HoverTooltip ref={tooltip} view={view} overlay={overlay} edgeGroups={edgeGroups} />
     </div>
   );
 }

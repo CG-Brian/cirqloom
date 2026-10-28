@@ -50,3 +50,31 @@ describe("explorer store", () => {
     expect(second?.nonce).toBe((first?.nonce ?? 0) + 1);
   });
 });
+
+describe("relation selection", () => {
+  it("inspects one thing at a time: a head or a relation", () => {
+    store().select("h1");
+    store().selectEdgeGroup("g1");
+    expect(store()).toMatchObject({ selectedNodeId: null, selectedEdgeGroupId: "g1" });
+    store().select("h2");
+    expect(store()).toMatchObject({ selectedNodeId: "h2", selectedEdgeGroupId: null });
+    store().selectEdgeGroup("g1");
+    store().select(null); // Escape / empty-space click clears both
+    expect(store()).toMatchObject({ selectedNodeId: null, selectedEdgeGroupId: null });
+  });
+
+  it("ignores a late pointer-out from a relation that is no longer hovered", () => {
+    store().hoverEdgeGroup("g1");
+    store().hoverEdgeGroup("g2");
+    store().unhoverEdgeGroup("g1");
+    expect(store().hoveredEdgeGroupId).toBe("g2");
+  });
+
+  it("closes relations when the circuit changes", () => {
+    store().toggleCircuit("c1");
+    store().hoverEdgeGroup("g1");
+    store().selectEdgeGroup("g1");
+    store().toggleCircuit("c1");
+    expect(store()).toMatchObject({ hoveredEdgeGroupId: null, selectedEdgeGroupId: null });
+  });
+});

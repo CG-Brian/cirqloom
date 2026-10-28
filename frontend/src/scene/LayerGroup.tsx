@@ -14,9 +14,10 @@ interface LayerGroupProps {
   headsPerLayer: number;
   nodes: HeadView[];
   overlay: CircuitOverlay | null;
+  edgeFocusSets: Map<string, Set<string>>;
 }
 
-export function LayerGroup({ layer, x, headsPerLayer, nodes, overlay }: LayerGroupProps) {
+export function LayerGroup({ layer, x, headsPerLayer, nodes, overlay, edgeFocusSets }: LayerGroupProps) {
   const frame = getLayerFrameStyle(layer, overlay);
   const { height, depth } = layerFrameSize(headsPerLayer);
 
@@ -53,7 +54,7 @@ export function LayerGroup({ layer, x, headsPerLayer, nodes, overlay }: LayerGro
         <LayerLabel text={`L${layer}`} position={[0, -height / 2 - HEAD_SPACING * 0.6, depth / 2]} />
       </group>
       {nodes.map((node) => (
-        <HeadNode key={node.id} node={node} overlay={overlay} />
+        <HeadNode key={node.id} node={node} overlay={overlay} edgeFocusSets={edgeFocusSets} />
       ))}
     </>
   );

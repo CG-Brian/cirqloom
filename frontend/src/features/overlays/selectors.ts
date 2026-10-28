@@ -33,6 +33,11 @@ export const EMPHASIS = {
   subduedNodeOpacity: 0.35,
   hoverScale: 1.15,
   selectedScale: 1.08,
+  /** Heads a hovered/selected relation is about. */
+  edgeFocusScale: 1.12,
+  /** Other circuit members, and other heads, while a relation is in focus. */
+  edgeOtherMemberOpacity: 0.5,
+  edgeOtherOpacity: 0.2,
 } as const;
 
 /**
@@ -123,6 +128,12 @@ export interface NodeStyleInput {
   isSelected: boolean;
   isHovered: boolean;
   overlay: CircuitOverlay | null;
+  /**
+   * While a circuit relation is hovered or selected: "involved" for the heads its evidence is
+   * about (senders, receiving group members), "other" for every other head. Emphasis only; it
+   * does not connect the involved heads to each other.
+   */
+  edgeFocus?: "involved" | "other" | null;
 }
 
 export interface RoleRing extends RoleStyle {
@@ -141,7 +152,7 @@ export interface NodeDisplayStyle {
 }
 
 export function getNodeDisplayStyle(input: NodeStyleInput): NodeDisplayStyle {
-  const { nodeId, isSelected, isHovered, overlay } = input;
+  const { nodeId, isSelected, isHovered, overlay, edgeFocus = null } = input;
   const roles = overlay?.rolesByNode.get(nodeId) ?? [];
   const primaryRole = roles[0];
 
@@ -157,12 +168,25 @@ export function getNodeDisplayStyle(input: NodeStyleInput): NodeDisplayStyle {
 
   // Non-members recede while a circuit is shown, but never what the user is pointing at.
   const subdued = overlay !== null && roleRing === null && !isSelected && !isHovered;
+  const pointedAt = isSelected || isHovered;
+
+  let opacity = subdued ? EMPHASIS.subduedNodeOpacity : 1;
+  let ring = roleRing;
+  let scale = isHovered ? EMPHASIS.hoverScale : isSelected ? EMPHASIS.selectedScale : 1;
+  if (edgeFocus === "involved") {
+    opacity = 1;
+    ring = ring && { ...ring, ringOpacity: 1, haloOpacity: EMPHASIS.memberHaloOpacity * 2 };
+    scale = Math.max(scale, EMPHASIS.edgeFocusScale);
+  } else if (edgeFocus === "other" && !pointedAt) {
+    opacity = ring ? EMPHASIS.edgeOtherMemberOpacity : EMPHASIS.edgeOtherOpacity;
+    ring = ring && { ...ring, ringOpacity: 0.3, haloOpacity: 0.04 };
+  }
 
   return {
     color: PALETTE.neutralNode,
-    opacity: subdued ? EMPHASIS.subduedNodeOpacity : 1,
-    scale: isHovered ? EMPHASIS.hoverScale : isSelected ? EMPHASIS.selectedScale : 1,
-    roleRing,
+    opacity,
+    scale,
+    roleRing: ring,
     selectionRing: isSelected ? { color: PALETTE.selectionRing, opacity: 1 } : null,
   };
 }

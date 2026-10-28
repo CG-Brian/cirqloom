@@ -44,6 +44,25 @@ export function layerFrameSize(headsPerLayer: number): { height: number; depth: 
   return { height: rows * HEAD_SPACING, depth: cols * HEAD_SPACING };
 }
 
+/** Height of the band above the layer frames where circuit hubs and ribbons are drawn. */
+export const CIRCUIT_BAND_GAP = 1.0;
+/** Highest point a circuit ribbon may reach above the band; circuitLayout clamps to it. */
+export const CIRCUIT_BAND_HEADROOM = 1.8;
+
+export function circuitBandY(headsPerLayer: number): number {
+  return layerFrameSize(headsPerLayer).height / 2 + CIRCUIT_BAND_GAP;
+}
+
+/**
+ * Everything the canonical view must frame: every head, plus the circuit band above the layers
+ * and the logits endpoint after the last layer, so showing a circuit never clips.
+ */
+export function sceneBounds(heads: Vec3[], nLayers: number, headsPerLayer: number): Bounds {
+  const top = circuitBandY(headsPerLayer) + CIRCUIT_BAND_HEADROOM;
+  const logitsX = layerX(nLayers - 1, nLayers) + LAYER_SPACING;
+  return boundsOf([...heads, [layerX(0, nLayers), top, 0], [logitsX, top, 0]]);
+}
+
 export function boundsOf(points: Vec3[]): Bounds {
   if (points.length === 0) {
     return { min: [0, 0, 0], max: [0, 0, 0], center: [0, 0, 0], radius: 0 };

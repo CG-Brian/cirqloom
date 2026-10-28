@@ -4,6 +4,8 @@
 import { useMemo, useState } from "react";
 import { StaticBundleProvider } from "../data/StaticBundleProvider";
 import type { Manifest } from "../data/schema";
+import { getCircuitLayout } from "../features/circuits/circuitLayout";
+import { getVisualEdgeGroups } from "../features/circuits/edgeGroups";
 import { getActiveExperiment } from "../features/experiment/activeExperiment";
 import type { GraphView } from "../features/experiment/graphView";
 import { useBundle } from "../features/experiment/useBundle";
@@ -53,6 +55,11 @@ function Explorer({ manifest, view }: { manifest: Manifest; view: GraphView }) {
   const experimentId = useExplorerStore((s) => s.experimentId);
   const experiment = getActiveExperiment(manifest, experimentId);
   const overlay = useMemo(() => getCircuitOverlay(view, activeCircuitId), [view, activeCircuitId]);
+  const edgeGroups = useMemo(() => getVisualEdgeGroups(view, overlay ? activeCircuitId : null), [view, overlay, activeCircuitId]);
+  const circuitLayout = useMemo(
+    () => (overlay ? getCircuitLayout(view, overlay.circuit.id, edgeGroups) : null),
+    [view, overlay, edgeGroups],
+  );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
 
@@ -61,12 +68,13 @@ function Explorer({ manifest, view }: { manifest: Manifest; view: GraphView }) {
       <TopBar manifest={manifest} experiment={experiment} />
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
         <main className="relative order-1 h-[55vh] shrink-0 lg:order-2 lg:h-auto lg:min-w-0 lg:flex-1">
-          <ModelScene view={view} overlay={overlay} />
+          <ModelScene view={view} overlay={overlay} edgeGroups={edgeGroups} circuitLayout={circuitLayout} />
         </main>
         <div className="order-2 lg:order-1 lg:flex">
           <CircuitSidebar
             view={view}
             overlay={overlay}
+            edgeGroups={edgeGroups}
             collapsed={sidebarCollapsed}
             onToggleCollapsed={() => setSidebarCollapsed((c) => !c)}
           />
@@ -77,6 +85,7 @@ function Explorer({ manifest, view }: { manifest: Manifest; view: GraphView }) {
             view={view}
             manifest={manifest}
             experiment={experiment}
+            edgeGroups={edgeGroups}
             collapsed={inspectorCollapsed}
             onToggleCollapsed={() => setInspectorCollapsed((c) => !c)}
           />

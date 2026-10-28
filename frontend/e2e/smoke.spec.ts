@@ -3,7 +3,13 @@
 // opens the default measured GPT-2 bundle.
 import { expect, test, type Page } from "@playwright/test";
 import { PerspectiveCamera, Vector3 } from "three";
-import { boundsOf, CAMERA_FOV, canonicalCameraPose, headPosition } from "../src/scene/layout";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { GraphSchema, ManifestSchema } from "../src/data/schema";
+import { getCircuitLayout } from "../src/features/circuits/circuitLayout";
+import { getVisualEdgeGroups } from "../src/features/circuits/edgeGroups";
+import { buildGraphView } from "../src/features/experiment/graphView";
+import { CAMERA_FOV, canonicalCameraPose, headPosition, sceneBounds, type Vec3 } from "../src/scene/layout";
 
 // The fixture's shape (GPT-2 Small).
 const LAYERS = 12;
@@ -58,7 +64,7 @@ function headScreenPoint(
     headPosition(Math.floor(i / HEADS), i % HEADS, LAYERS, HEADS),
   );
   const aspect = box.width / box.height;
-  const pose = canonicalCameraPose(boundsOf(positions), aspect);
+  const pose = canonicalCameraPose(sceneBounds(positions, LAYERS, HEADS), aspect);
   const camera = new PerspectiveCamera(CAMERA_FOV, aspect, 0.1, 500);
   camera.position.set(...pose.position);
   camera.lookAt(...pose.target);
@@ -200,5 +206,75 @@ test("measured bundle: the published IOI circuit overlays its 26 heads in 7 role
   await headButton(page, "L7H3").click();
   await expect(inspector.getByText("S-Inhibition", { exact: true })).toBeVisible();
   await expect(inspector.getByTestId("published-vs-measured")).toContainText("do not test");
+  expect(errors).toEqual([]);
+});
+
+
+/** The committed GPT-2 bundle, indexed exactly as the app does. */
+function loadGpt2View() {
+  const dir = path.resolve(process.cwd(), "../data/bundles/gpt2-small");
+  const read = (name: string): unknown => JSON.parse(readFileSync(path.join(dir, name), "utf8"));
+  return buildGraphView(ManifestSchema.parse(read("manifest.json")), GraphSchema.parse(read("graph.json")));
+}
+
+/** Screen point of a world position under the app's canonical camera. */
+function screenPoint(world: Vec3, view: ReturnType<typeof loadGpt2View>, box: { x: number; y: number; width: number; height: number }) {
+  const aspect = box.width / box.height;
+  const pose = canonicalCameraPose(view.bounds, aspect);
+  const camera = new PerspectiveCamera(CAMERA_FOV, aspect, 0.1, 500);
+  camera.position.set(...pose.position);
+  camera.lookAt(...pose.target);
+  camera.updateMatrixWorld();
+  const ndc = new Vector3(...world).project(camera);
+  return { x: box.x + ((ndc.x + 1) / 2) * box.width, y: box.y + ((1 - ndc.y) / 2) * box.height };
+}
+
+test("measured bundle: IOI relations open from the list with every evidence record", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/");
+  const sidebar = page.getByRole("complementary", { name: "Circuits and heads" });
+  await sidebar.getByRole("button", { name: /^Indirect Object Identification \(IOI\)/ }).click();
+
+  const relations = sidebar.getByRole("list", { name: "Circuit relations" });
+  await expect(relations.getByRole("button")).toHaveCount(8);
+  await expect(sidebar.getByText("Relations (8 · 27 evidence records)")).toBeVisible();
+
+  await relations.getByRole("button", { name: /^S-Inhibition heads → Name Mover queries/ }).click();
+  const inspector = page.getByRole("complementary", { name: "Relation inspector" });
+  await expect(inspector.getByText("Published experiment")).toBeVisible();
+  await expect(inspector.getByText(/Where: §3\.2, Figure 4b/)).toBeVisible();
+  await expect(inspector.getByRole("list", { name: "Evidence records" }).getByRole("listitem")).toHaveCount(4);
+
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("complementary", { name: "Head inspector" })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("measured bundle: clicking a ribbon in 3D opens that relation", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/");
+  await page
+    .getByRole("complementary", { name: "Circuits and heads" })
+    .getByRole("button", { name: /^Indirect Object Identification \(IOI\)/ })
+    .click();
+
+  const view = loadGpt2View();
+  const ioi = "circuit:gpt2-small:ioi:wang-2022";
+  const groups = getVisualEdgeGroups(view, ioi);
+  const layout = getCircuitLayout(view, ioi, groups);
+  const target = groups.find((g) => g.conditions.length > 0)!; // Backup Name Movers → logits
+  const curve = layout.edges.find((e) => e.groupId === target.id)!;
+  // A point a third of the way along, away from the channel label at the middle.
+  const world = curve.points[Math.round(curve.points.length / 3)]!;
+
+  const canvas = page.getByTestId("model-scene").locator("canvas");
+  const inspector = page.getByRole("complementary", { name: "Relation inspector" });
+  await expect(async () => {
+    const box = (await canvas.boundingBox())!;
+    const point = screenPoint(world, view, box);
+    await page.mouse.click(point.x, point.y);
+    await expect(inspector.getByText("Backup Name Mover heads → logits")).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
+  await expect(inspector.getByText("Only after the Name Mover heads are knocked out.")).toBeVisible();
   expect(errors).toEqual([]);
 });

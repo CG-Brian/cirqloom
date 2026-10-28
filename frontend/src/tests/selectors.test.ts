@@ -200,3 +200,27 @@ describe("encoding and layer frames", () => {
     }
   });
 });
+
+describe("node style while a relation is in focus", () => {
+  const withFocus = (nodeId: string, edgeFocus: "involved" | "other", isSelected = false) =>
+    getNodeDisplayStyle({ nodeId, isSelected, isHovered: false, overlay: overlayA, edgeFocus });
+
+  it("emphasises involved heads and recedes the rest, without recolouring anyone", () => {
+    const involved = withFocus(id(0, 0), "involved");
+    const otherMember = withFocus(id(1, 1), "other");
+    const otherHead = withFocus(id(0, 1), "other");
+    expect(involved.opacity).toBe(1);
+    expect(involved.scale).toBeGreaterThan(1);
+    expect(involved.roleRing?.ringOpacity).toBe(1);
+    expect(otherMember.opacity).toBe(EMPHASIS.edgeOtherMemberOpacity);
+    expect(otherMember.roleRing?.ringOpacity).toBeLessThan(involved.roleRing!.ringOpacity);
+    expect(otherHead.opacity).toBe(EMPHASIS.edgeOtherOpacity);
+    for (const s of [involved, otherMember, otherHead]) {
+      expect(s.color).toBe(PALETTE.neutralNode);
+    }
+  });
+
+  it("never dims the selected head", () => {
+    expect(withFocus(id(0, 1), "other", true).opacity).toBe(1);
+  });
+});

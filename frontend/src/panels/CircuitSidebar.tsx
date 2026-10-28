@@ -1,5 +1,6 @@
 // Left panel: circuit overlays, the role legend for the active one, detector overlays, and the
 // keyboard head list. Reads and writes the shared store; holds no selection state of its own.
+import { edgeGroupLabel, EVIDENCE_KIND_LABEL, getEdgeDisplayStyle, type VisualEdgeGroup } from "../features/circuits/edgeGroups";
 import type { GraphView } from "../features/experiment/graphView";
 import { getRoleLegend, type CircuitOverlay } from "../features/overlays/selectors";
 import { useExplorerStore } from "../features/selection/store";
@@ -9,11 +10,69 @@ import { CollapseButton, EmptyNote, EvidenceBadge, OriginBadge, PanelSection, Ro
 interface CircuitSidebarProps {
   view: GraphView;
   overlay: CircuitOverlay | null;
+  edgeGroups: VisualEdgeGroup[];
   collapsed: boolean;
   onToggleCollapsed: () => void;
 }
 
-export function CircuitSidebar({ view, overlay, collapsed, onToggleCollapsed }: CircuitSidebarProps) {
+const LINE_DASH = { solid: undefined, dashed: "5 3", dotted: "1.5 3" } as const;
+
+/** Keyboard-accessible list of the shown circuit's relations, parallel to the 3D ribbons. */
+function RelationList({ view, groups }: { view: GraphView; groups: VisualEdgeGroup[] }) {
+  const selectedEdgeGroupId = useExplorerStore((s) => s.selectedEdgeGroupId);
+  const selectEdgeGroup = useExplorerStore((s) => s.selectEdgeGroup);
+  const hoverEdgeGroup = useExplorerStore((s) => s.hoverEdgeGroup);
+  const unhoverEdgeGroup = useExplorerStore((s) => s.unhoverEdgeGroup);
+  const records = groups.reduce((n, g) => n + g.edges.length, 0);
+  return (
+    <div className="mt-3">
+      <h4 className="mb-1.5 text-[10px] font-medium text-slate-500 uppercase">
+        Relations ({groups.length} · {records} evidence records)
+      </h4>
+      <ul className="space-y-1" aria-label="Circuit relations">
+        {groups.map((g) => {
+          const selected = g.id === selectedEdgeGroupId;
+          const style = getEdgeDisplayStyle(g, "idle");
+          return (
+            <li key={g.id}>
+              <button
+                type="button"
+                aria-pressed={selected}
+                onClick={() => selectEdgeGroup(selected ? null : g.id)}
+                onMouseEnter={() => hoverEdgeGroup(g.id)}
+                onMouseLeave={() => unhoverEdgeGroup(g.id)}
+                onFocus={() => hoverEdgeGroup(g.id)}
+                onBlur={() => unhoverEdgeGroup(g.id)}
+                className={[
+                  "flex w-full items-start gap-2 rounded border px-2 py-1 text-left text-[11px] transition-colors",
+                  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400",
+                  selected ? "border-slate-300/60 bg-slate-800 text-slate-100" : "border-slate-800 text-slate-300 hover:border-slate-700",
+                ].join(" ")}
+              >
+                <svg width="18" height="8" viewBox="0 0 18 8" className="mt-1 shrink-0" aria-hidden="true">
+                  <line x1="1" y1="4" x2="17" y2="4" stroke="#cbd5e1" strokeWidth="1.5" strokeDasharray={LINE_DASH[style.pattern]} />
+                </svg>
+                <span className="flex-1">
+                  {edgeGroupLabel(view, g)}
+                  <span className="block text-[10px] text-slate-500">
+                    {g.edges.length} record{g.edges.length === 1 ? "" : "s"} · {EVIDENCE_KIND_LABEL[g.evidenceKind]}
+                    {g.conditions.length > 0 ? " · conditional" : ""}
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-2 text-[10px] leading-snug text-slate-500">
+        Solid: published experiment. Dotted: holds only under a stated condition. Ribbons join
+        group anchors; they are not wires between heads.
+      </p>
+    </div>
+  );
+}
+
+export function CircuitSidebar({ view, overlay, edgeGroups, collapsed, onToggleCollapsed }: CircuitSidebarProps) {
   const activeCircuitId = useExplorerStore((s) => s.activeCircuitId);
   const toggleCircuit = useExplorerStore((s) => s.toggleCircuit);
 
@@ -101,6 +160,7 @@ export function CircuitSidebar({ view, overlay, collapsed, onToggleCollapsed }: 
               <p className="mt-2 text-[10px] leading-snug text-slate-500">
                 A ring marks membership in this circuit. It is not a measured score.
               </p>
+              {edgeGroups.length > 0 && <RelationList view={view} groups={edgeGroups} />}
             </div>
           )}
         </PanelSection>
