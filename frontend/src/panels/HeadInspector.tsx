@@ -51,6 +51,7 @@ function MembershipItem({ item }: { item: HeadMembership }) {
         <OriginBadge origin={circuit.origin} />
         <EvidenceBadge status={membership.evidence_status} />
       </div>
+      {membership.note && <div className="mt-1 text-[11px] text-slate-300">Note: {membership.note}</div>}
       <div className="mt-1.5 text-[10px] text-slate-500">
         Source: <ExternalRef value={membership.source_reference} />
       </div>
@@ -282,6 +283,18 @@ export function HeadInspector({
                       />
                     ))}
                   </ul>
+                  {evidence.published.length > 0 && experiment && (
+                    <p
+                      data-testid="published-vs-measured"
+                      className="mt-2 rounded border border-sky-400/20 px-2 py-1.5 text-[10px] leading-snug text-slate-400"
+                    >
+                      These scores were measured here on <span className="font-mono">{experiment.prompt_suite}</span>{" "}
+                      prompts. They do not test this head&apos;s published role
+                      {evidence.published.length === 1 ? "" : "s"} (
+                      {evidence.published.map((p) => `${p.roleLabel} in ${p.circuit.name}`).join("; ")}), which
+                      come from the cited paper.
+                    </p>
+                  )}
                   {anyExperimental && (
                     <p className="mt-2 text-[10px] leading-snug text-slate-500">
                       Experimental: mean attention on the detector&apos;s cells. The method has not been

@@ -70,23 +70,24 @@ function headScreenPoint(
 test("clicking a head in the 3D scene selects it in the list and inspector", async ({ page }) => {
   const canvas = page.getByTestId("model-scene").locator("canvas");
   await expect(canvas).toBeVisible();
-  const box = await canvas.boundingBox();
-  if (!box) {
-    throw new Error("canvas has no bounding box");
-  }
-  const point = headScreenPoint(5, 5, box);
   const inspector = page.getByRole("complementary", { name: "Head inspector" });
+  let box = await canvas.boundingBox();
 
-  // Under load the first frames may render before the camera has fitted the canvas,
-  // so retry the click briefly instead of racing the first layout.
+  // Under load the first frames may render before the layout settles and the camera has
+  // fitted the canvas, so retry briefly, re-measuring the canvas on every attempt.
   await expect(async () => {
+    box = await canvas.boundingBox();
+    if (!box) {
+      throw new Error("canvas has no bounding box");
+    }
+    const point = headScreenPoint(5, 5, box);
     await page.mouse.click(point.x, point.y);
     await expect(inspector.getByText("model:gpt2-small:head:L5H5")).toBeVisible({ timeout: 1_000 });
   }).toPass({ timeout: 15_000 });
   await expect(headButton(page, "L5H5")).toHaveAttribute("aria-pressed", "true");
 
   // A click on empty space (top-left corner of the canvas) clears the selection.
-  await page.mouse.click(box.x + 8, box.y + 8);
+  await page.mouse.click(box!.x + 8, box!.y + 8);
   await expect(headButton(page, "L5H5")).toHaveAttribute("aria-pressed", "false");
 });
 
@@ -178,5 +179,26 @@ test("measured bundle: heatmap draws real attention and outlines the exported ma
   // A future cell is reported as not attendable, never as a weight.
   await page.mouse.move(box.x + 15.5 * cell, box.y + 2.5 * cell);
   await expect(readout).toContainText("future position: not attendable");
+  expect(errors).toEqual([]);
+});
+
+test("measured bundle: the published IOI circuit overlays its 26 heads in 7 roles", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/");
+  const sidebar = page.getByRole("complementary", { name: "Circuits and heads" });
+  const ioi = sidebar.getByRole("button", { name: /^Indirect Object Identification \(IOI\)/ });
+  await expect(ioi).toContainText("26 heads");
+  await expect(ioi).toContainText("Published annotation");
+  await ioi.click();
+  await expect(ioi).toHaveAttribute("aria-pressed", "true");
+  for (const role of ["Previous Token", "Duplicate Token", "Induction", "S-Inhibition", "Name Mover",
+    "Negative Name Mover", "Backup Name Mover"]) {
+    await expect(sidebar.getByText(role, { exact: true })).toBeVisible();
+  }
+
+  const inspector = page.getByRole("complementary", { name: "Head inspector" });
+  await headButton(page, "L7H3").click();
+  await expect(inspector.getByText("S-Inhibition", { exact: true })).toBeVisible();
+  await expect(inspector.getByTestId("published-vs-measured")).toContainText("do not test");
   expect(errors).toEqual([]);
 });

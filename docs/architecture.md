@@ -13,11 +13,13 @@ detectors/            numpy masks, specs   features/experiment/     graphView, u
 capture/              run + score, controls features/selection/     Zustand store (ids + flags)
 export/               fixture, measured,   features/overlays/       pure highlight selectors
                       validate → write     scene/                   R3F canvas, camera, heads
+published/            reviewed circuit
+                      annotations → records
 scripts/              build / validate     panels/ + app/           sidebar, list, inspector, shell
             │
             ▼
 data/fixtures/gpt2-small-demo/        manifest.json, graph.json
-data/bundles/gpt2-small-repeated-v1/  manifest.json, graph.json, assets/, README.md
+data/bundles/gpt2-small/              manifest.json, graph.json, assets/, README.md
             │  (served as Vite publicDir)
             └──────────────────────────────▶ StaticBundleProvider
 ```
@@ -26,7 +28,7 @@ data/bundles/gpt2-small-repeated-v1/  manifest.json, graph.json, assets/, README
 
 ## Analysis pipeline
 
-`build_gpt2_bundle.py`: `GPT2Adapter` (pinned revision, checks 12×12 / n_ctx / vocab / BOS after loading) → for each length, `build_suite` for the repeated and control suites → `run_experiment` (one batch per experiment, `run_attention` validates token ids before and attention after the model, every registered detector that accepts the suite scores it) → `compare` (control report) → `build_measured_bundle` → `write_bundle` → re-read and `validate_bundle_files`. Detectors see heads on one flat axis (`layer * n_heads + head`); `unflatten_heads` is the only place that undoes it.
+`build_gpt2_bundle.py`: `GPT2Adapter` (pinned revision, checks 12×12 / n_ctx / vocab / BOS after loading) → for each length, `build_suite` for the repeated and control suites → `run_experiment` (one batch per experiment, `run_attention` validates token ids before and attention after the model, every registered detector that accepts the suite scores it) → `compare` (control report) → `import_ioi` (published annotations, no model involved; refuses any model but GPT-2 Small) → `build_measured_bundle` (adds published circuits as given; they never change observations, masks or assets) → `write_bundle` → re-read and `validate_bundle_files`. Detectors see heads on one flat axis (`layer * n_heads + head`); `unflatten_heads` is the only place that undoes it.
 
 ## Data flow in the app
 

@@ -20,7 +20,20 @@ from cirqloom_analysis.export.bundle_writer import (
 )
 from cirqloom_analysis.export.measured import build_measured_bundle, observation_status
 from cirqloom_analysis.prompts.repeated import CONTROL_SUITE, REPEATED_SUITE, build_suite
-from cirqloom_analysis.schema.validation import BundleValidationError, head_node_id
+from cirqloom_analysis.published.base import PublishedCircuit
+from cirqloom_analysis.schema.bundle import (
+    Circuit,
+    Edge,
+    HeadEndpoint,
+    Membership,
+    RoleDef,
+    RoleGroupEndpoint,
+)
+from cirqloom_analysis.schema.validation import (
+    BundleValidationError,
+    head_node_id,
+    validate_bundle,
+)
 
 REGISTRY = default_registry()
 SEEDS = [0, 1, 2, 3]
@@ -223,3 +236,46 @@ def test_file_validation_catches_truncated_attention(runs, tmp_path):
     (tmp_path / uri).write_bytes(b"\0\0")
     with pytest.raises(BundleValidationError, match="expected"):
         validate_bundle_files(tmp_path, manifest)
+
+
+def toy_published_circuit():
+    """A published circuit for the toy model: L0H1 → receiver group {L1H2} through keys."""
+    cid = "circuit:toy:test"
+    node = lambda layer, head: head_node_id("toy", layer, head)  # noqa: E731
+    circuit = Circuit(id=cid, name="Toy", origin="published", description="",
+                      citation="Toy et al.", roles=[RoleDef(id="a", label="A", description=""),
+                                                    RoleDef(id="b", label="B", description="")])
+    memberships = [
+        Membership(circuit_id=cid, node_id=node(0, 1), role="a", source_reference="Toy, Fig 1",
+                   evidence_status="published", note=None),
+        Membership(circuit_id=cid, node_id=node(1, 2), role="b", source_reference="Toy, Fig 1",
+                   evidence_status="published", note=None),
+    ]
+    edge = Edge(
+        id=f"{cid}:edge:L0H1->b:k", circuit_id=cid,
+        source=HeadEndpoint(kind="head", node_id=node(0, 1)),
+        target=RoleGroupEndpoint(kind="role_group", circuit_id=cid, role="b"),
+        channel="k", positions=None, evidence_kind="published_experimental",
+        evidence_status="published", effect=None, magnitude=None, conditions=[],
+        locator="Figure 1", method_reference=None, description="",
+    )
+    return PublishedCircuit(circuit, memberships, [edge], "toy annotations v1")
+
+
+def test_published_circuits_never_change_measured_data(runs):
+    plain_manifest, plain_graph, plain_assets = build(runs)
+    manifest, graph, assets = build_measured_bundle(
+        list(runs), INFO, ContentAwareAdapter().token_strings, bundle_id="toy:test:v1",
+        generator="test", environment={"device": "cpu"}, notes="test bundle",
+        published=[toy_published_circuit()],
+    )
+    validate_bundle(manifest, graph)
+    assert graph.observations == plain_graph.observations
+    assert graph.masks == plain_graph.masks
+    assert assets == plain_assets
+    assert manifest.experiments == plain_manifest.experiments
+    # Published records keep their own status; measured ones stay experimental.
+    assert {m.evidence_status for m in graph.memberships} == {"published"}
+    assert {o.status for o in graph.observations} == {"experimental"}
+    assert manifest.provenance.environment["published circuit:toy:test"] == "toy annotations v1"
+    assert len(graph.edges) == 1 and len(graph.circuits) == 1

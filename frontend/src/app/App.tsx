@@ -19,7 +19,7 @@ import { TopBar } from "./TopBar";
 // Served from ../data (vite publicDir). The measured bundle is the default; ?bundle=fixture
 // opens the synthetic demo fixture, which the browser smoke tests use for its circuit.
 const BUNDLE_PATHS = {
-  measured: "/bundles/gpt2-small-repeated-v1",
+  measured: "/bundles/gpt2-small",
   fixture: "/fixtures/gpt2-small-demo",
 } as const;
 

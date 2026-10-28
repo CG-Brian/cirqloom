@@ -1,5 +1,5 @@
 {
-  "bundle_id": "gpt2-small:repeated-tokens:v1",
+  "bundle_id": "gpt2-small:v2",
   "display_warning": null,
   "experiments": [
     {
@@ -164,6 +164,7 @@
       "numpy": "2.5.4",
       "precision": "scores rounded to 6 decimals; attention assets float16",
       "prepend_bos": "true",
+      "published circuit:gpt2-small:ioi:wang-2022": "IOI annotations v1.0.0 (arXiv:2211.00593v1; code https://github.com/redwoodresearch/Easy-Transformer@e168301; verified 2026-10-28, see docs/sources/ioi-wang-2022.md)",
       "python": "3.14.7",
       "torch": "2.14.1",
       "transformer-lens": "4.3.0",
@@ -171,7 +172,7 @@
     },
     "generator": "analysis/scripts/build_gpt2_bundle.py",
     "generator_version": "1",
-    "notes": "Attention-pattern detectors on repeated random tokens, with a paired non-repeated control. All detector results are 'experimental': heuristic attention scores, not causal evidence. No circuits are included."
+    "notes": "Measured here: attention-pattern detectors on repeated random tokens, with a paired non-repeated control; every score is 'experimental' (heuristic attention, not causal evidence). Published, not measured here: the IOI circuit of Wang et al. (2022), imported from reviewed annotations. Repeated-token scores do not test any head's IOI role."
   },
   "schema_version": "1.3.0",
   "synthetic_fixture": false

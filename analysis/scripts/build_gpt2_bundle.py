@@ -1,4 +1,4 @@
-"""Capture GPT-2 Small attention on repeated-token prompts and write a measured bundle.
+"""Write the GPT-2 Small bundle: measured attention experiments plus published circuits.
 
 Requires the real-model dependencies: pip install -e "analysis[dev,model]". Downloads the
 pinned GPT-2 weights (~500 MB) into the Hugging Face cache on first run.
@@ -22,16 +22,18 @@ from cirqloom_analysis.export.bundle_writer import (
 from cirqloom_analysis.export.measured import build_measured_bundle
 from cirqloom_analysis.models.gpt2 import GPT2Adapter
 from cirqloom_analysis.prompts.repeated import CONTROL_SUITE, REPEATED_SUITE, build_suite
+from cirqloom_analysis.published.ioi.importer import import_ioi
 from cirqloom_analysis.schema.validation import validate_bundle
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_OUT = REPO_ROOT / "data" / "bundles" / "gpt2-small-repeated-v1"
-BUNDLE_ID = "gpt2-small:repeated-tokens:v1"
+DEFAULT_OUT = REPO_ROOT / "data" / "bundles" / "gpt2-small"
+BUNDLE_ID = "gpt2-small:v2"
 GENERATOR = "analysis/scripts/build_gpt2_bundle.py"
 NOTES = (
-    "Attention-pattern detectors on repeated random tokens, with a paired non-repeated "
-    "control. All detector results are 'experimental': heuristic attention scores, not "
-    "causal evidence. No circuits are included."
+    "Measured here: attention-pattern detectors on repeated random tokens, with a paired "
+    "non-repeated control; every score is 'experimental' (heuristic attention, not causal "
+    "evidence). Published, not measured here: the IOI circuit of Wang et al. (2022), imported "
+    "from reviewed annotations. Repeated-token scores do not test any head's IOI role."
 )
 
 
@@ -76,11 +78,12 @@ def main() -> int:
         "bos_token": f"{info.bos_token_id} (<|endoftext|>, used as BOS by convention)",
         "precision": "scores rounded to 6 decimals; attention assets float16",
     }
+    published = [import_ioi(info.to_bundle_model())]
     manifest, graph, assets = build_measured_bundle(
         runs, info, adapter.token_strings, bundle_id=BUNDLE_ID, generator=GENERATOR,
-        environment=environment, notes=NOTES,
+        environment=environment, notes=NOTES, published=published,
     )
-    readme = render_readme(manifest, controls_markdown(comparisons), args)
+    readme = render_readme(manifest, graph, controls_markdown(comparisons), args)
     write_bundle(manifest, graph, args.out, assets, readme)
 
     written_manifest, written_graph = read_bundle(args.out)
@@ -91,7 +94,20 @@ def main() -> int:
     return 0
 
 
-def render_readme(manifest, controls: str, args) -> str:
+def render_published(graph) -> str:
+    lines = []
+    for circuit in graph.circuits:
+        members = [m for m in graph.memberships if m.circuit_id == circuit.id]
+        edges = [e for e in graph.edges if e.circuit_id == circuit.id]
+        lines.append(
+            f"- `{circuit.id}` ({circuit.origin}): {len(circuit.roles)} roles, {len(members)} "
+            f"member heads, {len(edges)} relations, all `published_experimental` with a locator "
+            f"and no magnitude. {circuit.citation}"
+        )
+    return "\n".join(lines) or "None."
+
+
+def render_readme(manifest, graph, controls: str, args) -> str:
     env = "\n".join(f"- {k}: {v}" for k, v in sorted(manifest.provenance.environment.items()))
     experiments = "\n".join(
         f"- `{e.id}` ({e.kind}, seq {e.sequence_length}, {len(e.seeds)} prompts): {e.description}"
@@ -99,7 +115,8 @@ def render_readme(manifest, controls: str, args) -> str:
     )
     return f"""# {manifest.bundle_id}
 
-Measured GPT-2 Small attention bundle. Regenerate with:
+GPT-2 Small bundle: measured attention experiments and published circuit annotations, kept
+apart by provenance and evidence status. Regenerate with:
 
     python analysis/scripts/build_gpt2_bundle.py --lengths {' '.join(map(str, args.lengths))} \\
         --seeds {args.seeds} --device {args.device}
@@ -116,6 +133,13 @@ Measured GPT-2 Small attention bundle. Regenerate with:
 - Attention assets: one prompt per measurement experiment, float16
   `[layer, head, q, k]`. Weights from the GPT-2 model card license apply to the model; this
   bundle contains derived attention values only, no weights.
+
+## Published circuits (imported, not measured here)
+
+{render_published(graph)}
+
+Imported from `analysis/cirqloom_analysis/published/`; sources and checks in `docs/sources/`.
+The repeated-token experiments below do not test these roles.
 
 ## Experiments
 

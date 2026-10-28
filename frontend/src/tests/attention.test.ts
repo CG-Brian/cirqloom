@@ -8,7 +8,7 @@ import { decodeFloat16, halfToNumber } from "../data/float16";
 import { StaticBundleProvider } from "../data/StaticBundleProvider";
 
 const DATA_DIR = path.resolve(process.cwd(), "../data");
-const BUNDLE = "/bundles/gpt2-small-repeated-v1";
+const BUNDLE = "/bundles/gpt2-small";
 const EXPERIMENT = "repeated_tokens_v1:L10";
 
 describe("float16 decoding", () => {

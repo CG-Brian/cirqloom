@@ -4,7 +4,7 @@
 
 Two bundles are committed:
 
-- `data/bundles/gpt2-small-repeated-v1/` (default in the app): measured attention scores for GPT-2 Small (`openai-community/gpt2` at a pinned revision). No circuits, memberships or edges.
+- `data/bundles/gpt2-small/` (default in the app, bundle id `gpt2-small:v2`): measured attention scores for GPT-2 Small (`openai-community/gpt2` at a pinned revision), plus the **published** IOI circuit (Wang et al., 2022: 7 roles, 26 members, 27 relations) imported from `analysis/cirqloom_analysis/published/ioi/annotations.json`. The two are kept apart: published records have status `published`, a citation and a locator, and no numbers; measured records are `experimental` and come from repeated random tokens, which do not test any IOI role. Provenance lists the annotation version under `published circuit:gpt2-small:ioi:wang-2022`.
 - `data/fixtures/gpt2-small-demo/` (`?bundle=fixture`): the synthetic fixture. Zero experiments and observations; one deliberately artificial circuit (diagonal heads L*k*H*k*, `origin: "synthetic_fixture"`). The UI labels it "Demo fixture — not measured model data."
 
 ### Prompt suites

@@ -1,0 +1,200 @@
+{
+  "annotation_version": "1.0.0",
+  "verified_on": "2026-10-28",
+  "source_record": "docs/sources/ioi-wang-2022.md",
+  "circuit": {
+    "id": "circuit:gpt2-small:ioi:wang-2022",
+    "name": "Indirect Object Identification (IOI)",
+    "description": "Completes sentences such as \"When Mary and John went to the store, John gave a drink to\" with the indirect object (Mary). 26 attention heads in 7 classes. The roles are task-specific: they were established on the paper's IOI templates, not as general functions of these heads.",
+    "citation": "Wang, Variengien, Conmy, Shlegeris, Steinhardt (2022). Interpretability in the Wild: a Circuit for Indirect Object Identification in GPT-2 Small. arXiv:2211.00593v1. https://arxiv.org/abs/2211.00593"
+  },
+  "model": {
+    "id": "gpt2-small",
+    "hf_id": "openai-community/gpt2",
+    "layers": 12,
+    "heads_per_layer": 12
+  },
+  "sources": {
+    "paper": {
+      "arxiv": "2211.00593v1",
+      "url": "https://arxiv.org/abs/2211.00593",
+      "note": "v1 (2022-11-01) is the only arXiv version; page numbers are those printed on its PDF."
+    },
+    "code": {
+      "repository": "https://github.com/redwoodresearch/Easy-Transformer",
+      "file": "easy_transformer/ioi_circuit_extraction.py",
+      "lines": "168-201 (CIRCUIT)",
+      "file_commit": "e168301aa05154a14d52e5b6f98b6518200f5b1f",
+      "repository_head_checked": "ea15315dd24481e9e2ac5c3ef335d82907a1dc34",
+      "note": "The code merges Backup Name Movers into \"name mover\"; the paper's 7 classes are followed here."
+    }
+  },
+  "roles": [
+    {
+      "id": "previous_token",
+      "label": "Previous Token",
+      "description": "Copy information about the subject S to the position after its first occurrence (S1+1).",
+      "locator": "§3 (p. 5); Appendix D"
+    },
+    {
+      "id": "duplicate_token",
+      "label": "Duplicate Token",
+      "description": "Active at S2 and attend to S1: signal that the token is a duplicate, carrying the position of its earlier occurrence.",
+      "locator": "§3 (p. 4); §3.3"
+    },
+    {
+      "id": "induction",
+      "label": "Induction",
+      "description": "Active at S2 and attend to S1+1 (through Previous Token Heads). In this circuit their output acts as a position signal for S-Inhibition, unlike the original induction-head description.",
+      "locator": "§3 (p. 5); §3.3"
+    },
+    {
+      "id": "s_inhibition",
+      "label": "S-Inhibition",
+      "description": "Active at END and attend to S2; write into Name Mover queries so that Name Movers avoid S1 and S2.",
+      "locator": "§3 (p. 4); §3.2"
+    },
+    {
+      "id": "name_mover",
+      "label": "Name Mover",
+      "description": "Active at END; attend to earlier names and copy the attended name to the output (attending to IO because of S-Inhibition).",
+      "locator": "§3 (p. 4); §3.1"
+    },
+    {
+      "id": "negative_name_mover",
+      "label": "Negative Name Mover",
+      "description": "Write in the opposite direction of the Name Movers, lowering the confidence of the prediction.",
+      "locator": "§3 (p. 5); §3.1"
+    },
+    {
+      "id": "backup_name_mover",
+      "label": "Backup Name Mover",
+      "description": "Do not normally move the IO name to the output, but take over this role when the Name Movers are knocked out.",
+      "locator": "§3 (p. 5); §3.4; Appendix F"
+    }
+  ],
+  "members": [
+    {"layer": 2, "head": 2, "role": "previous_token", "locator": "Figure 2; Appendix D, Figure 13", "note": null},
+    {"layer": 4, "head": 11, "role": "previous_token", "locator": "Figure 2; Appendix D, Figure 13", "note": null},
+    {"layer": 0, "head": 1, "role": "duplicate_token", "locator": "Figure 2; §3.3; Appendix C", "note": null},
+    {"layer": 3, "head": 0, "role": "duplicate_token", "locator": "Figure 2; §3.3; Appendix C", "note": null},
+    {"layer": 0, "head": 10, "role": "duplicate_token", "locator": "Figure 2 (in parentheses); Appendix C", "note": "Fuzzy Duplicate Token Head: found through S-Inhibition keys, not values (Appendix C)."},
+    {"layer": 5, "head": 5, "role": "induction", "locator": "Figure 2; §3.3; Appendix H", "note": null},
+    {"layer": 6, "head": 9, "role": "induction", "locator": "Figure 2; §3.3; Appendix H", "note": null},
+    {"layer": 5, "head": 8, "role": "induction", "locator": "Figure 2 (in parentheses); Appendix C", "note": "Fuzzy Induction Head: found through S-Inhibition keys, not values (Appendix C)."},
+    {"layer": 5, "head": 9, "role": "induction", "locator": "Figure 2 (in parentheses); Appendix C", "note": "Fuzzy Induction Head: found through S-Inhibition keys, not values (Appendix C)."},
+    {"layer": 7, "head": 3, "role": "s_inhibition", "locator": "Figure 2; §3.2, Figure 4b", "note": null},
+    {"layer": 7, "head": 9, "role": "s_inhibition", "locator": "Figure 2; §3.2, Figure 4b", "note": null},
+    {"layer": 8, "head": 6, "role": "s_inhibition", "locator": "Figure 2; §3.2, Figure 4b", "note": null},
+    {"layer": 8, "head": 10, "role": "s_inhibition", "locator": "Figure 2; §3.2, Figure 4b", "note": null},
+    {"layer": 9, "head": 9, "role": "name_mover", "locator": "Figure 2; §3.1, Figure 3a", "note": null},
+    {"layer": 9, "head": 6, "role": "name_mover", "locator": "Figure 2; §3.1, Figure 3a", "note": null},
+    {"layer": 10, "head": 0, "role": "name_mover", "locator": "Figure 2; §3.1, Figure 3a", "note": null},
+    {"layer": 10, "head": 7, "role": "negative_name_mover", "locator": "Figure 2; §3.1, Figure 3a", "note": null},
+    {"layer": 11, "head": 10, "role": "negative_name_mover", "locator": "Figure 2; §3.1, Figure 3a", "note": null},
+    {"layer": 9, "head": 0, "role": "backup_name_mover", "locator": "Figure 2; §3.4; Appendix F", "note": null},
+    {"layer": 9, "head": 7, "role": "backup_name_mover", "locator": "Figure 2; §3.4; Appendix F", "note": null},
+    {"layer": 10, "head": 1, "role": "backup_name_mover", "locator": "Figure 2; §3.4; Appendix F", "note": null},
+    {"layer": 10, "head": 2, "role": "backup_name_mover", "locator": "Figure 2; §3.4; Appendix F", "note": null},
+    {"layer": 10, "head": 6, "role": "backup_name_mover", "locator": "Figure 2; §3.4; Appendix F", "note": null},
+    {"layer": 10, "head": 10, "role": "backup_name_mover", "locator": "Figure 2; §3.4; Appendix F", "note": null},
+    {"layer": 11, "head": 2, "role": "backup_name_mover", "locator": "Figure 2; §3.4; Appendix F", "note": null},
+    {"layer": 11, "head": 9, "role": "backup_name_mover", "locator": "Figure 2; §3.4; Appendix F", "note": null}
+  ],
+  "relations": [
+    {
+      "id": "name_movers_to_logits",
+      "senders": {"granularity": "per_head", "heads": [[9, 9], [9, 6], [10, 0]]},
+      "receiver": {"special": "logits"},
+      "channel": "direct_logit",
+      "positions": {"source": "END", "target": null},
+      "effect": {"metric": "ioi_logit_difference", "direction": "increase"},
+      "conditions": [],
+      "locator": "§3.1, Figure 3a (p. 5-6)",
+      "description": "Path patching h → logits at END, one head at a time: these heads contribute positively to the IO − S logit difference."
+    },
+    {
+      "id": "negative_name_movers_to_logits",
+      "senders": {"granularity": "per_head", "heads": [[10, 7], [11, 10]]},
+      "receiver": {"special": "logits"},
+      "channel": "direct_logit",
+      "positions": {"source": "END", "target": null},
+      "effect": {"metric": "ioi_logit_difference", "direction": "decrease"},
+      "conditions": [],
+      "locator": "§3.1, Figure 3a (p. 5-6)",
+      "description": "Path patching h → logits at END, one head at a time: patching increases the logit difference, so these heads contribute negatively."
+    },
+    {
+      "id": "s_inhibition_heads_to_name_mover_queries",
+      "senders": {"granularity": "per_head", "heads": [[7, 3], [7, 9], [8, 6], [8, 10]]},
+      "receiver": {"role_group": "name_mover"},
+      "channel": "q",
+      "positions": {"source": "END", "target": "END"},
+      "effect": null,
+      "conditions": [],
+      "locator": "§3.2, Figure 4b (p. 7)",
+      "description": "Path patching h → Name Mover queries, one sender head at a time into all Name Movers: each causes a significant drop in logit difference."
+    },
+    {
+      "id": "s_inhibition_group_to_name_mover_queries",
+      "senders": {"granularity": "group", "role_group": "s_inhibition"},
+      "receiver": {"role_group": "name_mover"},
+      "channel": "q",
+      "positions": {"source": "END", "target": "END"},
+      "effect": null,
+      "conditions": [],
+      "locator": "§3.2, Figure 4c (p. 7)",
+      "description": "All four S-Inhibition heads patched together into Name Mover queries: Name Movers attend more to S1 and less to IO."
+    },
+    {
+      "id": "duplicate_and_induction_heads_to_s_inhibition_values",
+      "senders": {"granularity": "per_head", "heads": [[0, 1], [3, 0], [5, 5], [6, 9]]},
+      "receiver": {"role_group": "s_inhibition"},
+      "channel": "v",
+      "positions": {"source": "S2", "target": "END"},
+      "effect": null,
+      "conditions": [],
+      "locator": "§3.3, Figure 5b (p. 7-8); heads named in Appendix C (0.1, 3.0) and Appendix H (5.5, 6.9)",
+      "description": "Path patching h → S-Inhibition values at S2, one sender head at a time: four heads with a significant negative effect on logit difference."
+    },
+    {
+      "id": "fuzzy_heads_to_s_inhibition_keys",
+      "senders": {"granularity": "per_head", "heads": [[0, 10], [5, 8], [5, 9]]},
+      "receiver": {"role_group": "s_inhibition"},
+      "channel": "k",
+      "positions": {"source": "S2", "target": "END"},
+      "effect": null,
+      "conditions": [],
+      "locator": "Appendix C, Figure 12b (p. 17-18)",
+      "description": "Path patching h → S-Inhibition keys: three further heads (fuzzy Duplicate Token 0.10, fuzzy Induction 5.8 and 5.9) influence the logit difference positively."
+    },
+    {
+      "id": "previous_token_heads_to_induction_keys",
+      "senders": {"granularity": "per_head", "heads": [[2, 2], [4, 11]]},
+      "receiver": {"role_group": "induction"},
+      "channel": "k",
+      "positions": {"source": "S1+1", "target": "S2"},
+      "effect": null,
+      "conditions": [],
+      "locator": "Appendix D, Figure 13 (p. 18)",
+      "description": "Path patching h → Induction Heads' keys at S1+1, one sender head at a time: the two main heads with a significant effect."
+    },
+    {
+      "id": "backup_name_movers_to_logits",
+      "senders": {"granularity": "per_head", "heads": [[9, 0], [9, 7], [10, 1], [10, 2], [10, 6], [10, 10], [11, 2], [11, 9]]},
+      "receiver": {"special": "logits"},
+      "channel": "direct_logit",
+      "positions": {"source": "END", "target": null},
+      "effect": null,
+      "conditions": ["after_knockout:name_mover"],
+      "locator": "§3.4 (p. 9); Appendix F, Figure 15",
+      "description": "Only after all Name Movers are knocked out: the eight heads with the highest direct effect on logits. Their behaviour before the knockout is diverse (Appendix F)."
+    }
+  ],
+  "not_imported": [
+    "Figure 2 arrows as published_schematic edges: every arrow is covered by an experimental relation above.",
+    "Appendix C sentence on Duplicate Token Heads 3.0 and 0.1 with a reversed effect: it is in the keys section but says 'values', so its channel is ambiguous.",
+    "Heads commented out in the official code: (7, 1) under duplicate token; (2, 9), (4, 3), (4, 7), (5, 6), (3, 3), (3, 7), (3, 6) under previous token.",
+    "Head-pair edges (for example 7.3 → 9.9): the paper has no head-pair results."
+  ]
+}

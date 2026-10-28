@@ -43,7 +43,7 @@ jobs:
         run: python analysis/scripts/validate_bundle.py data/fixtures/gpt2-small-demo
 
       - name: Validate committed GPT-2 bundle (not rebuilt in CI; needs model weights)
-        run: python analysis/scripts/validate_bundle.py data/bundles/gpt2-small-repeated-v1
+        run: python analysis/scripts/validate_bundle.py data/bundles/gpt2-small
 
       - name: Committed fixture matches a fresh build
         run: |

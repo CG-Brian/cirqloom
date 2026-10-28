@@ -16,3 +16,13 @@ export function loadFixture() {
   const graph = GraphSchema.parse(readJson("graph.json"));
   return { manifest, graph, view: buildGraphView(manifest, graph) };
 }
+
+const MEASURED_DIR = path.resolve(process.cwd(), "../data/bundles/gpt2-small");
+
+/** The committed GPT-2 bundle (measured experiments + published IOI annotations). */
+export function loadMeasured() {
+  const read = (name: string): unknown => JSON.parse(readFileSync(path.join(MEASURED_DIR, name), "utf8"));
+  const manifest = ManifestSchema.parse(read("manifest.json"));
+  const graph = GraphSchema.parse(read("graph.json"));
+  return { manifest, graph, view: buildGraphView(manifest, graph) };
+}

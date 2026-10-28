@@ -11,13 +11,14 @@ stable). Attention assets are float16, one example prompt per experiment.
 """
 
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 import numpy as np
 
 from cirqloom_analysis.capture.runner import ExperimentRun, unflatten_heads
 from cirqloom_analysis.models.base import AdapterInfo
 from cirqloom_analysis.prompts.repeated import CONTROL_SUITE, REPEATED_SUITE
+from cirqloom_analysis.published.base import PublishedCircuit
 from cirqloom_analysis.schema.bundle import (
     SCHEMA_VERSION,
     AttentionAsset,
@@ -117,8 +118,13 @@ def build_measured_bundle(
     generator: str,
     environment: dict[str, str],
     notes: str,
+    published: Sequence[PublishedCircuit] = (),
 ) -> tuple[Manifest, Graph, dict[str, bytes]]:
-    """Manifest, graph and asset files (relative path → bytes) for a measured bundle."""
+    """Manifest, graph and asset files (relative path → bytes) for a measured bundle.
+
+    `published` circuits are added as they are: they never change observations, masks or
+    assets, and each one's source line goes into provenance under "published <circuit id>".
+    """
     if not runs:
         raise ValueError("no experiment runs to export")
     assets: dict[str, bytes] = {}
@@ -187,7 +193,13 @@ def build_measured_bundle(
         model=info.to_bundle_model(),
         experiments=experiments,
         provenance=Provenance(
-            generator=generator, generator_version="1", notes=notes, environment=environment
+            generator=generator,
+            generator_version="1",
+            notes=notes,
+            environment={
+                **environment,
+                **{f"published {p.circuit.id}": p.provenance for p in published},
+            },
         ),
         graph_uri="graph.json",
     )
@@ -197,8 +209,8 @@ def build_measured_bundle(
         nodes=nodes,
         observations=observations,
         masks=masks,
-        circuits=[],
-        memberships=[],
-        edges=[],
+        circuits=[p.circuit for p in published],
+        memberships=[m for p in published for m in p.memberships],
+        edges=[e for p in published for e in p.edges],
     )
     return manifest, graph, assets

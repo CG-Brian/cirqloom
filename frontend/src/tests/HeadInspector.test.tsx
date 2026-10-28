@@ -5,7 +5,7 @@ import type { Experiment, Graph, Manifest } from "../data/schema";
 import { buildGraphView } from "../features/experiment/graphView";
 import { initialExplorerState, useExplorerStore } from "../features/selection/store";
 import { HeadInspector } from "../panels/HeadInspector";
-import { loadFixture } from "./fixtureView";
+import { loadFixture, loadMeasured } from "./fixtureView";
 
 const fixture = loadFixture();
 
@@ -296,5 +296,38 @@ describe("HeadInspector detector masks", () => {
     expect(screen.getByText("Cells not recorded for this detector.")).toBeInTheDocument();
     expect(screen.getByText(/no mask is drawn/)).toBeInTheDocument();
     expect(screen.getByText(/No mask shown/)).toBeInTheDocument();
+  });
+});
+
+describe("HeadInspector on the GPT-2 bundle with the published IOI circuit", () => {
+  const measured = loadMeasured();
+  const repeatedL10 = measured.manifest.experiments.find((e) => e.id === "repeated_tokens_v1:L10")!;
+
+  it("shows the published role and the repeated-token scores as separate kinds of evidence", () => {
+    useExplorerStore.setState({ selectedNodeId: "model:gpt2-small:head:L5H5" });
+    renderInspector(measured.view, measured.manifest, repeatedL10);
+    const membership = section("Circuit membership");
+    expect(within(membership).getByText("Induction")).toBeInTheDocument();
+    expect(within(membership).getByText("Published annotation")).toBeInTheDocument();
+    expect(within(membership).getByText("Published")).toBeInTheDocument();
+    expect(within(section("Published annotations")).getByText(/arXiv:2211\.00593v1/)).toBeInTheDocument();
+
+    const scores = section("Measured observations");
+    expect(within(scores).getAllByText("Experimental").length).toBeGreaterThan(0);
+    expect(within(scores).getByTestId("published-vs-measured")).toHaveTextContent(
+      "measured here on repeated_tokens_v1 prompts. They do not test this head's published role (Induction in Indirect Object Identification (IOI))",
+    );
+  });
+
+  it("shows the paper's note on a fuzzy member", () => {
+    useExplorerStore.setState({ selectedNodeId: "model:gpt2-small:head:L0H10" });
+    renderInspector(measured.view, measured.manifest, repeatedL10);
+    expect(within(section("Circuit membership")).getByText(/Fuzzy Duplicate Token Head/)).toBeInTheDocument();
+  });
+
+  it("adds no published-vs-measured note to a head outside every circuit", () => {
+    useExplorerStore.setState({ selectedNodeId: "model:gpt2-small:head:L1H1" });
+    renderInspector(measured.view, measured.manifest, repeatedL10);
+    expect(screen.queryByTestId("published-vs-measured")).toBeNull();
   });
 });

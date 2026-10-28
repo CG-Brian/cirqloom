@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { crossCheckBundle, GraphSchema, ManifestSchema, TokensFileSchema } from "../data/schema";
 
 const FIXTURE_DIR = new URL("../../../data/fixtures/gpt2-small-demo/", import.meta.url);
-const MEASURED_DIR = new URL("../../../data/bundles/gpt2-small-repeated-v1/", import.meta.url);
+const MEASURED_DIR = new URL("../../../data/bundles/gpt2-small/", import.meta.url);
 
 function loadJson(name: string, dir = FIXTURE_DIR): Record<string, unknown> {
   return JSON.parse(readFileSync(fileURLToPath(new URL(name, dir)), "utf8"));
@@ -64,7 +64,14 @@ describe("bundle contract shared with Python", () => {
     expect(crossCheckBundle(manifest, graph)).toEqual([]);
     expect(manifest.synthetic_fixture).toBe(false);
     expect(manifest.model.revision).toMatch(/^[0-9a-f]{40}$/);
-    expect(graph.circuits).toEqual([]);
+    // Published IOI annotations ride along, with their own status; nothing measured is "published".
+    expect(graph.circuits.map((c) => [c.id, c.origin])).toEqual([["circuit:gpt2-small:ioi:wang-2022", "published"]]);
+    expect(graph.memberships).toHaveLength(26);
+    expect(graph.edges).toHaveLength(27);
+    expect(new Set(graph.memberships.map((m) => m.evidence_status))).toEqual(new Set(["published"]));
+    expect(new Set(graph.edges.map((e) => e.evidence_kind))).toEqual(new Set(["published_experimental"]));
+    expect(graph.edges.every((e) => e.magnitude === null && e.locator)).toBe(true);
+    expect(Object.keys(manifest.provenance.environment)).toContain("published circuit:gpt2-small:ioi:wang-2022");
     for (const experiment of manifest.experiments) {
       const tokens = TokensFileSchema.parse(loadJson(experiment.tokens_uri, MEASURED_DIR));
       expect(tokens.experiment_id).toBe(experiment.id);

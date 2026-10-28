@@ -1,13 +1,14 @@
-# gpt2-small:repeated-tokens:v1
+# gpt2-small:v2
 
-Measured GPT-2 Small attention bundle. Regenerate with:
+GPT-2 Small bundle: measured attention experiments and published circuit annotations, kept
+apart by provenance and evidence status. Regenerate with:
 
     python analysis/scripts/build_gpt2_bundle.py --lengths 10 25 50 \
         --seeds 8 --device cpu
 
 ## What this is
 
-Attention-pattern detectors on repeated random tokens, with a paired non-repeated control. All detector results are 'experimental': heuristic attention scores, not causal evidence. No circuits are included.
+Measured here: attention-pattern detectors on repeated random tokens, with a paired non-repeated control; every score is 'experimental' (heuristic attention, not causal evidence). Published, not measured here: the IOI circuit of Wang et al. (2022), imported from reviewed annotations. Repeated-token scores do not test any head's IOI role.
 
 - Model: `openai-community/gpt2` at revision `607a30d783dfa663caf39e06633721c8d4cfcd7e`
   (12 layers × 12 heads).
@@ -17,6 +18,13 @@ Attention-pattern detectors on repeated random tokens, with a paired non-repeate
 - Attention assets: one prompt per measurement experiment, float16
   `[layer, head, q, k]`. Weights from the GPT-2 model card license apply to the model; this
   bundle contains derived attention values only, no weights.
+
+## Published circuits (imported, not measured here)
+
+- `circuit:gpt2-small:ioi:wang-2022` (published): 7 roles, 26 member heads, 27 relations, all `published_experimental` with a locator and no magnitude. Wang, Variengien, Conmy, Shlegeris, Steinhardt (2022). Interpretability in the Wild: a Circuit for Indirect Object Identification in GPT-2 Small. arXiv:2211.00593v1. https://arxiv.org/abs/2211.00593
+
+Imported from `analysis/cirqloom_analysis/published/`; sources and checks in `docs/sources/`.
+The repeated-token experiments below do not test these roles.
 
 ## Experiments
 
@@ -53,6 +61,7 @@ as measured; no pass/fail threshold is applied.
 - numpy: 2.5.4
 - precision: scores rounded to 6 decimals; attention assets float16
 - prepend_bos: true
+- published circuit:gpt2-small:ioi:wang-2022: IOI annotations v1.0.0 (arXiv:2211.00593v1; code https://github.com/redwoodresearch/Easy-Transformer@e168301; verified 2026-10-28, see docs/sources/ioi-wang-2022.md)
 - python: 3.14.7
 - torch: 2.14.1
 - transformer-lens: 4.3.0

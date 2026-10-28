@@ -1,7 +1,774 @@
 {
-  "bundle_id": "gpt2-small:repeated-tokens:v1",
-  "circuits": [],
-  "edges": [],
+  "bundle_id": "gpt2-small:v2",
+  "circuits": [
+    {
+      "citation": "Wang, Variengien, Conmy, Shlegeris, Steinhardt (2022). Interpretability in the Wild: a Circuit for Indirect Object Identification in GPT-2 Small. arXiv:2211.00593v1. https://arxiv.org/abs/2211.00593",
+      "description": "Completes sentences such as \"When Mary and John went to the store, John gave a drink to\" with the indirect object (Mary). 26 attention heads in 7 classes. The roles are task-specific: they were established on the paper's IOI templates, not as general functions of these heads.",
+      "id": "circuit:gpt2-small:ioi:wang-2022",
+      "name": "Indirect Object Identification (IOI)",
+      "origin": "published",
+      "roles": [
+        {
+          "description": "Copy information about the subject S to the position after its first occurrence (S1+1).",
+          "id": "previous_token",
+          "label": "Previous Token"
+        },
+        {
+          "description": "Active at S2 and attend to S1: signal that the token is a duplicate, carrying the position of its earlier occurrence.",
+          "id": "duplicate_token",
+          "label": "Duplicate Token"
+        },
+        {
+          "description": "Active at S2 and attend to S1+1 (through Previous Token Heads). In this circuit their output acts as a position signal for S-Inhibition, unlike the original induction-head description.",
+          "id": "induction",
+          "label": "Induction"
+        },
+        {
+          "description": "Active at END and attend to S2; write into Name Mover queries so that Name Movers avoid S1 and S2.",
+          "id": "s_inhibition",
+          "label": "S-Inhibition"
+        },
+        {
+          "description": "Active at END; attend to earlier names and copy the attended name to the output (attending to IO because of S-Inhibition).",
+          "id": "name_mover",
+          "label": "Name Mover"
+        },
+        {
+          "description": "Write in the opposite direction of the Name Movers, lowering the confidence of the prediction.",
+          "id": "negative_name_mover",
+          "label": "Negative Name Mover"
+        },
+        {
+          "description": "Do not normally move the IO name to the output, but take over this role when the Name Movers are knocked out.",
+          "id": "backup_name_mover",
+          "label": "Backup Name Mover"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "channel": "direct_logit",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → logits at END, one head at a time: these heads contribute positively to the IO − S logit difference.",
+      "effect": {
+        "direction": "increase",
+        "metric": "ioi_logit_difference"
+      },
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L9H9->logits:direct_logit",
+      "locator": "§3.1, Figure 3a (p. 5-6)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": null
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L9H9"
+      },
+      "target": {
+        "id": "logits",
+        "kind": "special"
+      }
+    },
+    {
+      "channel": "direct_logit",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → logits at END, one head at a time: these heads contribute positively to the IO − S logit difference.",
+      "effect": {
+        "direction": "increase",
+        "metric": "ioi_logit_difference"
+      },
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L9H6->logits:direct_logit",
+      "locator": "§3.1, Figure 3a (p. 5-6)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": null
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L9H6"
+      },
+      "target": {
+        "id": "logits",
+        "kind": "special"
+      }
+    },
+    {
+      "channel": "direct_logit",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → logits at END, one head at a time: these heads contribute positively to the IO − S logit difference.",
+      "effect": {
+        "direction": "increase",
+        "metric": "ioi_logit_difference"
+      },
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L10H0->logits:direct_logit",
+      "locator": "§3.1, Figure 3a (p. 5-6)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": null
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L10H0"
+      },
+      "target": {
+        "id": "logits",
+        "kind": "special"
+      }
+    },
+    {
+      "channel": "direct_logit",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → logits at END, one head at a time: patching increases the logit difference, so these heads contribute negatively.",
+      "effect": {
+        "direction": "decrease",
+        "metric": "ioi_logit_difference"
+      },
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L10H7->logits:direct_logit",
+      "locator": "§3.1, Figure 3a (p. 5-6)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": null
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L10H7"
+      },
+      "target": {
+        "id": "logits",
+        "kind": "special"
+      }
+    },
+    {
+      "channel": "direct_logit",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → logits at END, one head at a time: patching increases the logit difference, so these heads contribute negatively.",
+      "effect": {
+        "direction": "decrease",
+        "metric": "ioi_logit_difference"
+      },
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L11H10->logits:direct_logit",
+      "locator": "§3.1, Figure 3a (p. 5-6)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": null
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L11H10"
+      },
+      "target": {
+        "id": "logits",
+        "kind": "special"
+      }
+    },
+    {
+      "channel": "q",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → Name Mover queries, one sender head at a time into all Name Movers: each causes a significant drop in logit difference.",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L7H3->name_mover:q",
+      "locator": "§3.2, Figure 4b (p. 7)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": "END"
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L7H3"
+      },
+      "target": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "name_mover"
+      }
+    },
+    {
+      "channel": "q",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → Name Mover queries, one sender head at a time into all Name Movers: each causes a significant drop in logit difference.",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L7H9->name_mover:q",
+      "locator": "§3.2, Figure 4b (p. 7)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": "END"
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L7H9"
+      },
+      "target": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "name_mover"
+      }
+    },
+    {
+      "channel": "q",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → Name Mover queries, one sender head at a time into all Name Movers: each causes a significant drop in logit difference.",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L8H6->name_mover:q",
+      "locator": "§3.2, Figure 4b (p. 7)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": "END"
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L8H6"
+      },
+      "target": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "name_mover"
+      }
+    },
+    {
+      "channel": "q",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → Name Mover queries, one sender head at a time into all Name Movers: each causes a significant drop in logit difference.",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L8H10->name_mover:q",
+      "locator": "§3.2, Figure 4b (p. 7)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": "END"
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L8H10"
+      },
+      "target": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "name_mover"
+      }
+    },
+    {
+      "channel": "q",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "All four S-Inhibition heads patched together into Name Mover queries: Name Movers attend more to S1 and less to IO.",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:s_inhibition->name_mover:q",
+      "locator": "§3.2, Figure 4c (p. 7)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": "END"
+      },
+      "source": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "s_inhibition"
+      },
+      "target": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "name_mover"
+      }
+    },
+    {
+      "channel": "v",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → S-Inhibition values at S2, one sender head at a time: four heads with a significant negative effect on logit difference.",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L0H1->s_inhibition:v",
+      "locator": "§3.3, Figure 5b (p. 7-8); heads named in Appendix C (0.1, 3.0) and Appendix H (5.5, 6.9)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "S2",
+        "target": "END"
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L0H1"
+      },
+      "target": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "s_inhibition"
+      }
+    },
+    {
+      "channel": "v",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → S-Inhibition values at S2, one sender head at a time: four heads with a significant negative effect on logit difference.",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L3H0->s_inhibition:v",
+      "locator": "§3.3, Figure 5b (p. 7-8); heads named in Appendix C (0.1, 3.0) and Appendix H (5.5, 6.9)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "S2",
+        "target": "END"
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L3H0"
+      },
+      "target": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "s_inhibition"
+      }
+    },
+    {
+      "channel": "v",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → S-Inhibition values at S2, one sender head at a time: four heads with a significant negative effect on logit difference.",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L5H5->s_inhibition:v",
+      "locator": "§3.3, Figure 5b (p. 7-8); heads named in Appendix C (0.1, 3.0) and Appendix H (5.5, 6.9)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "S2",
+        "target": "END"
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L5H5"
+      },
+      "target": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "s_inhibition"
+      }
+    },
+    {
+      "channel": "v",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → S-Inhibition values at S2, one sender head at a time: four heads with a significant negative effect on logit difference.",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L6H9->s_inhibition:v",
+      "locator": "§3.3, Figure 5b (p. 7-8); heads named in Appendix C (0.1, 3.0) and Appendix H (5.5, 6.9)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "S2",
+        "target": "END"
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L6H9"
+      },
+      "target": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "s_inhibition"
+      }
+    },
+    {
+      "channel": "k",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → S-Inhibition keys: three further heads (fuzzy Duplicate Token 0.10, fuzzy Induction 5.8 and 5.9) influence the logit difference positively.",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L0H10->s_inhibition:k",
+      "locator": "Appendix C, Figure 12b (p. 17-18)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "S2",
+        "target": "END"
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L0H10"
+      },
+      "target": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "s_inhibition"
+      }
+    },
+    {
+      "channel": "k",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → S-Inhibition keys: three further heads (fuzzy Duplicate Token 0.10, fuzzy Induction 5.8 and 5.9) influence the logit difference positively.",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L5H8->s_inhibition:k",
+      "locator": "Appendix C, Figure 12b (p. 17-18)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "S2",
+        "target": "END"
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L5H8"
+      },
+      "target": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "s_inhibition"
+      }
+    },
+    {
+      "channel": "k",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → S-Inhibition keys: three further heads (fuzzy Duplicate Token 0.10, fuzzy Induction 5.8 and 5.9) influence the logit difference positively.",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L5H9->s_inhibition:k",
+      "locator": "Appendix C, Figure 12b (p. 17-18)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "S2",
+        "target": "END"
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L5H9"
+      },
+      "target": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "s_inhibition"
+      }
+    },
+    {
+      "channel": "k",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → Induction Heads' keys at S1+1, one sender head at a time: the two main heads with a significant effect.",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L2H2->induction:k",
+      "locator": "Appendix D, Figure 13 (p. 18)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "S1+1",
+        "target": "S2"
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L2H2"
+      },
+      "target": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "induction"
+      }
+    },
+    {
+      "channel": "k",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [],
+      "description": "Path patching h → Induction Heads' keys at S1+1, one sender head at a time: the two main heads with a significant effect.",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L4H11->induction:k",
+      "locator": "Appendix D, Figure 13 (p. 18)",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "S1+1",
+        "target": "S2"
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L4H11"
+      },
+      "target": {
+        "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+        "kind": "role_group",
+        "role": "induction"
+      }
+    },
+    {
+      "channel": "direct_logit",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [
+        "after_knockout:name_mover"
+      ],
+      "description": "Only after all Name Movers are knocked out: the eight heads with the highest direct effect on logits. Their behaviour before the knockout is diverse (Appendix F).",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L9H0->logits:direct_logit",
+      "locator": "§3.4 (p. 9); Appendix F, Figure 15",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": null
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L9H0"
+      },
+      "target": {
+        "id": "logits",
+        "kind": "special"
+      }
+    },
+    {
+      "channel": "direct_logit",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [
+        "after_knockout:name_mover"
+      ],
+      "description": "Only after all Name Movers are knocked out: the eight heads with the highest direct effect on logits. Their behaviour before the knockout is diverse (Appendix F).",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L9H7->logits:direct_logit",
+      "locator": "§3.4 (p. 9); Appendix F, Figure 15",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": null
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L9H7"
+      },
+      "target": {
+        "id": "logits",
+        "kind": "special"
+      }
+    },
+    {
+      "channel": "direct_logit",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [
+        "after_knockout:name_mover"
+      ],
+      "description": "Only after all Name Movers are knocked out: the eight heads with the highest direct effect on logits. Their behaviour before the knockout is diverse (Appendix F).",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L10H1->logits:direct_logit",
+      "locator": "§3.4 (p. 9); Appendix F, Figure 15",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": null
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L10H1"
+      },
+      "target": {
+        "id": "logits",
+        "kind": "special"
+      }
+    },
+    {
+      "channel": "direct_logit",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [
+        "after_knockout:name_mover"
+      ],
+      "description": "Only after all Name Movers are knocked out: the eight heads with the highest direct effect on logits. Their behaviour before the knockout is diverse (Appendix F).",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L10H2->logits:direct_logit",
+      "locator": "§3.4 (p. 9); Appendix F, Figure 15",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": null
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L10H2"
+      },
+      "target": {
+        "id": "logits",
+        "kind": "special"
+      }
+    },
+    {
+      "channel": "direct_logit",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [
+        "after_knockout:name_mover"
+      ],
+      "description": "Only after all Name Movers are knocked out: the eight heads with the highest direct effect on logits. Their behaviour before the knockout is diverse (Appendix F).",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L10H6->logits:direct_logit",
+      "locator": "§3.4 (p. 9); Appendix F, Figure 15",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": null
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L10H6"
+      },
+      "target": {
+        "id": "logits",
+        "kind": "special"
+      }
+    },
+    {
+      "channel": "direct_logit",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [
+        "after_knockout:name_mover"
+      ],
+      "description": "Only after all Name Movers are knocked out: the eight heads with the highest direct effect on logits. Their behaviour before the knockout is diverse (Appendix F).",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L10H10->logits:direct_logit",
+      "locator": "§3.4 (p. 9); Appendix F, Figure 15",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": null
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L10H10"
+      },
+      "target": {
+        "id": "logits",
+        "kind": "special"
+      }
+    },
+    {
+      "channel": "direct_logit",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [
+        "after_knockout:name_mover"
+      ],
+      "description": "Only after all Name Movers are knocked out: the eight heads with the highest direct effect on logits. Their behaviour before the knockout is diverse (Appendix F).",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L11H2->logits:direct_logit",
+      "locator": "§3.4 (p. 9); Appendix F, Figure 15",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": null
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L11H2"
+      },
+      "target": {
+        "id": "logits",
+        "kind": "special"
+      }
+    },
+    {
+      "channel": "direct_logit",
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "conditions": [
+        "after_knockout:name_mover"
+      ],
+      "description": "Only after all Name Movers are knocked out: the eight heads with the highest direct effect on logits. Their behaviour before the knockout is diverse (Appendix F).",
+      "effect": null,
+      "evidence_kind": "published_experimental",
+      "evidence_status": "published",
+      "id": "circuit:gpt2-small:ioi:wang-2022:edge:L11H9->logits:direct_logit",
+      "locator": "§3.4 (p. 9); Appendix F, Figure 15",
+      "magnitude": null,
+      "method_reference": null,
+      "positions": {
+        "source": "END",
+        "target": null
+      },
+      "source": {
+        "kind": "head",
+        "node_id": "model:gpt2-small:head:L11H9"
+      },
+      "target": {
+        "id": "logits",
+        "kind": "special"
+      }
+    }
+  ],
   "masks": [
     {
       "cells_qk": [
@@ -3524,7 +4291,216 @@
       "parameters": {}
     }
   ],
-  "memberships": [],
+  "memberships": [
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L2H2",
+      "note": null,
+      "role": "previous_token",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; Appendix D, Figure 13"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L4H11",
+      "note": null,
+      "role": "previous_token",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; Appendix D, Figure 13"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L0H1",
+      "note": null,
+      "role": "duplicate_token",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.3; Appendix C"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L3H0",
+      "note": null,
+      "role": "duplicate_token",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.3; Appendix C"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L0H10",
+      "note": "Fuzzy Duplicate Token Head: found through S-Inhibition keys, not values (Appendix C).",
+      "role": "duplicate_token",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2 (in parentheses); Appendix C"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L5H5",
+      "note": null,
+      "role": "induction",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.3; Appendix H"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L6H9",
+      "note": null,
+      "role": "induction",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.3; Appendix H"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L5H8",
+      "note": "Fuzzy Induction Head: found through S-Inhibition keys, not values (Appendix C).",
+      "role": "induction",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2 (in parentheses); Appendix C"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L5H9",
+      "note": "Fuzzy Induction Head: found through S-Inhibition keys, not values (Appendix C).",
+      "role": "induction",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2 (in parentheses); Appendix C"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L7H3",
+      "note": null,
+      "role": "s_inhibition",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.2, Figure 4b"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L7H9",
+      "note": null,
+      "role": "s_inhibition",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.2, Figure 4b"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L8H6",
+      "note": null,
+      "role": "s_inhibition",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.2, Figure 4b"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L8H10",
+      "note": null,
+      "role": "s_inhibition",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.2, Figure 4b"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L9H9",
+      "note": null,
+      "role": "name_mover",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.1, Figure 3a"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L9H6",
+      "note": null,
+      "role": "name_mover",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.1, Figure 3a"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L10H0",
+      "note": null,
+      "role": "name_mover",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.1, Figure 3a"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L10H7",
+      "note": null,
+      "role": "negative_name_mover",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.1, Figure 3a"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L11H10",
+      "note": null,
+      "role": "negative_name_mover",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.1, Figure 3a"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L9H0",
+      "note": null,
+      "role": "backup_name_mover",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.4; Appendix F"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L9H7",
+      "note": null,
+      "role": "backup_name_mover",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.4; Appendix F"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L10H1",
+      "note": null,
+      "role": "backup_name_mover",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.4; Appendix F"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L10H2",
+      "note": null,
+      "role": "backup_name_mover",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.4; Appendix F"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L10H6",
+      "note": null,
+      "role": "backup_name_mover",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.4; Appendix F"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L10H10",
+      "note": null,
+      "role": "backup_name_mover",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.4; Appendix F"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L11H2",
+      "note": null,
+      "role": "backup_name_mover",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.4; Appendix F"
+    },
+    {
+      "circuit_id": "circuit:gpt2-small:ioi:wang-2022",
+      "evidence_status": "published",
+      "node_id": "model:gpt2-small:head:L11H9",
+      "note": null,
+      "role": "backup_name_mover",
+      "source_reference": "Wang et al. (2022), arXiv:2211.00593v1: Figure 2; §3.4; Appendix F"
+    }
+  ],
   "nodes": [
     {
       "head": 0,
