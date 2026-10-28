@@ -2,7 +2,18 @@
 
 from collections import Counter
 
-from cirqloom_analysis.schema.bundle import Graph, Manifest
+from cirqloom_analysis.schema.bundle import (
+    Edge,
+    Endpoint,
+    Graph,
+    HeadEndpoint,
+    Manifest,
+    RoleGroupEndpoint,
+    SpecialEndpoint,
+)
+
+PUBLISHED_KINDS = {"published_schematic", "published_experimental"}
+MEASURED_KINDS = {"weight_composition", "causal_intervention"}
 
 
 class BundleValidationError(ValueError):
@@ -122,11 +133,14 @@ def validate_bundle(manifest: Manifest, graph: Graph) -> None:
         elif settings != {(mask.detector_version, tuple(sorted(mask.parameters.items())))}:
             problems.append(f"{where}: detector_version/parameters differ from its observations")
 
-    # c. edges connect real nodes
+    # k. edges: real endpoints inside their own circuit, a channel that fits the target, and
+    #    provenance that fits the evidence kind
+    for edge_id, count in Counter(e.id for e in graph.edges).items():
+        if count > 1:
+            problems.append(f"duplicate edge id {edge_id!r} ({count}x)")
+    members = {(m.circuit_id, m.node_id) for m in graph.memberships}
     for edge in graph.edges:
-        for end in (edge.source_node_id, edge.target_node_id):
-            if end not in node_ids:
-                problems.append(f"edge {edge.id!r} references unknown node {end!r}")
+        problems.extend(_edge_problems(edge, circuits, node_ids, members))
 
     # f. a fixture can never pose as real/published data (and vice versa)
     if manifest.synthetic_fixture:
@@ -142,3 +156,68 @@ def validate_bundle(manifest: Manifest, graph: Graph) -> None:
 
     if problems:
         raise BundleValidationError(problems)
+
+
+def _endpoint_problems(
+    edge: Edge,
+    end: Endpoint,
+    side: str,
+    circuits: dict,
+    node_ids: set[str],
+    members: set[tuple[str, str]],
+) -> list[str]:
+    where = f"edge {edge.id!r} {side}"
+    if isinstance(end, HeadEndpoint):
+        if end.node_id not in node_ids:
+            return [f"{where}: unknown node {end.node_id!r}"]
+        if (edge.circuit_id, end.node_id) not in members:
+            return [f"{where}: {end.node_id!r} is not a member of {edge.circuit_id!r}"]
+    elif isinstance(end, RoleGroupEndpoint):
+        if end.circuit_id != edge.circuit_id:
+            return [f"{where}: role group belongs to another circuit {end.circuit_id!r}"]
+        circuit = circuits.get(end.circuit_id)
+        if circuit is not None and end.role not in {r.id for r in circuit.roles}:
+            return [f"{where}: role {end.role!r} not declared in {end.circuit_id!r}"]
+    elif isinstance(end, SpecialEndpoint):
+        # logits only receive, embed only sends.
+        if (end.id == "logits") != (side == "target"):
+            return [f"{where}: {end.id!r} cannot be the {side}"]
+    return []
+
+
+def _edge_problems(
+    edge: Edge, circuits: dict, node_ids: set[str], members: set[tuple[str, str]]
+) -> list[str]:
+    where = f"edge {edge.id!r}"
+    problems: list[str] = []
+    circuit = circuits.get(edge.circuit_id)
+    if circuit is None:
+        problems.append(f"{where}: unknown circuit {edge.circuit_id!r}")
+    for side, end in (("source", edge.source), ("target", edge.target)):
+        problems.extend(_endpoint_problems(edge, end, side, circuits, node_ids, members))
+    if edge.source == edge.target:
+        problems.append(f"{where}: source and target are the same")
+
+    to_logits = isinstance(edge.target, SpecialEndpoint) and edge.target.id == "logits"
+    if (edge.channel == "direct_logit") != to_logits:
+        problems.append(f"{where}: channel 'direct_logit' is used exactly for edges into logits")
+
+    if edge.evidence_kind in PUBLISHED_KINDS:
+        if circuit is not None and circuit.origin != "published":
+            problems.append(f"{where}: published evidence in a non-published circuit")
+        if edge.evidence_status != "published":
+            problems.append(f"{where}: published evidence must have status 'published'")
+        if not (edge.locator or "").strip():
+            problems.append(f"{where}: published evidence needs a locator in the citation")
+    else:  # measured by us
+        if edge.evidence_status == "published":
+            problems.append(f"{where}: our own measurement cannot have status 'published'")
+        if not (edge.method_reference or "").strip():
+            problems.append(f"{where}: a measured edge needs a method_reference")
+        if edge.magnitude is None:
+            problems.append(f"{where}: a measured edge needs a magnitude")
+    if edge.evidence_kind == "weight_composition" and edge.effect is not None:
+        problems.append(f"{where}: weight composition has no effect on a metric")
+    if edge.evidence_kind == "causal_intervention" and not edge.conditions:
+        problems.append(f"{where}: a causal edge must state the conditions it was measured under")
+    return problems

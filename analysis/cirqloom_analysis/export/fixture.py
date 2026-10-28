@@ -53,6 +53,7 @@ def build_fixture() -> tuple[Manifest, Graph]:
             role="fixture_role_a" if k % 2 == 0 else "fixture_role_b",
             source_reference=FIXTURE_REF,
             evidence_status="experimental",
+            note=None,
         )
         for k in range(min(model.layers, model.heads_per_layer))
     ]

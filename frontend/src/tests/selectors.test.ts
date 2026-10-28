@@ -18,7 +18,7 @@ import {
 const id = (layer: number, head: number) => `model:toy:head:L${layer}H${head}`;
 
 const manifest: Manifest = {
-  schema_version: "1.2.0",
+  schema_version: "1.3.0",
   bundle_id: "toy",
   synthetic_fixture: true,
   display_warning: "toy",
@@ -34,10 +34,11 @@ const membership = (circuit_id: string, node_id: string, role: string) => ({
   role,
   source_reference: "test",
   evidence_status: "experimental" as const,
+  note: null,
 });
 
 const graph: Graph = {
-  schema_version: "1.2.0",
+  schema_version: "1.3.0",
   bundle_id: "toy",
   nodes: [0, 1].flatMap((layer) =>
     [0, 1].map((head) => ({ id: id(layer, head), type: "attention_head" as const, layer, head })),

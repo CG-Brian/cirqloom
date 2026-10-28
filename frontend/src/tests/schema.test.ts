@@ -77,6 +77,36 @@ describe("bundle contract shared with Python", () => {
     expect(new Set(graph.masks.map((m) => `${m.experiment_id}|${m.detector_id}`))).toEqual(pairs);
   });
 
+  it("parses edges with head, role-group and special endpoints, and rejects malformed ones", () => {
+    const edge = {
+      id: "e1",
+      circuit_id: "c",
+      source: { kind: "head", node_id: "model:gpt2-small:head:L7H3" },
+      target: { kind: "role_group", circuit_id: "c", role: "name_mover" },
+      channel: "q",
+      positions: { source: "END", target: "END" },
+      evidence_kind: "published_experimental",
+      evidence_status: "published",
+      effect: null,
+      magnitude: null,
+      conditions: [],
+      locator: "§3.2, Figure 4b",
+      method_reference: null,
+      description: "test",
+    };
+    const withEdge = (e: object) => ({ ...loadJson("graph.json"), edges: [e] });
+    const parsed = GraphSchema.parse(withEdge(edge));
+    const target = parsed.edges[0]!.target;
+    expect(target.kind === "role_group" && target.role).toBe("name_mover");
+    expect(GraphSchema.safeParse(withEdge({ ...edge, target: { kind: "special", id: "logits" } })).success).toBe(true);
+    // role_group without its circuit, an unknown endpoint kind, an unknown special id
+    expect(GraphSchema.safeParse(withEdge({ ...edge, target: { kind: "role_group", role: "x" } })).success).toBe(false);
+    expect(GraphSchema.safeParse(withEdge({ ...edge, target: { kind: "mlp", node_id: "x" } })).success).toBe(false);
+    expect(GraphSchema.safeParse(withEdge({ ...edge, target: { kind: "special", id: "residual" } })).success).toBe(false);
+    // the M0 edge shape is gone
+    expect(GraphSchema.safeParse(withEdge({ ...edge, source_node_id: "x" })).success).toBe(false);
+  });
+
   it("rejects a mask with no cells or a malformed cell", () => {
     const mask = {
       experiment_id: "exp-test",

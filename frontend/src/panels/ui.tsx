@@ -30,15 +30,16 @@ export function EvidenceBadge({ status }: { status: EvidenceStatus }) {
   );
 }
 
+const ORIGIN_BADGE: Record<Circuit["origin"], { label: string; className: string }> = {
+  published: { label: "Published annotation", className: "bg-sky-500/15 text-sky-200" },
+  measured_reconstruction: { label: "Measured reconstruction", className: "bg-teal-500/15 text-teal-200" },
+  synthetic_fixture: { label: "Synthetic fixture", className: "bg-amber-500/15 text-amber-200" },
+};
+
 export function OriginBadge({ origin }: { origin: Circuit["origin"] }) {
-  return origin === "published" ? (
-    <span className="inline-flex rounded bg-sky-500/15 px-1.5 py-px text-[10px] leading-4 font-medium text-sky-200">
-      Published annotation
-    </span>
-  ) : (
-    <span className="inline-flex rounded bg-amber-500/15 px-1.5 py-px text-[10px] leading-4 font-medium text-amber-200">
-      Synthetic fixture
-    </span>
+  const { label, className } = ORIGIN_BADGE[origin];
+  return (
+    <span className={`inline-flex rounded px-1.5 py-px text-[10px] leading-4 font-medium ${className}`}>{label}</span>
   );
 }
 

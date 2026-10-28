@@ -6,10 +6,16 @@ from pydantic import ValidationError
 from cirqloom_analysis.export.fixture import build_fixture
 from cirqloom_analysis.schema.bundle import (
     AttentionAsset,
+    Circuit,
     DetectorMask,
+    Edge,
     Experiment,
+    Graph,
+    Membership,
     Node,
     Observation,
+    RoleDef,
+    RoleGroupEndpoint,
 )
 from cirqloom_analysis.schema.validation import BundleValidationError, validate_bundle
 
@@ -238,3 +244,141 @@ def test_reports_all_problems_at_once(bundle):
     with pytest.raises(BundleValidationError) as exc_info:
         validate_bundle(manifest, graph)
     assert len(exc_info.value.problems) == 2
+
+
+# --- Edges (schema 1.3.0) --------------------------------------------------------------------
+
+PUB = "circuit:test:published"
+HEAD = "model:gpt2-small:head:L{}H{}"
+
+
+def with_published_circuit(bundle, edges, origin="published"):
+    """A real (non-fixture) bundle with one small circuit: L7H3 (sender), L9H9 (receiver)."""
+    manifest, graph = bundle
+    manifest = manifest.model_copy(update={"synthetic_fixture": False, "display_warning": None})
+    circuit = Circuit(
+        id=PUB,
+        name="Test circuit",
+        origin=origin,
+        description="test",
+        citation="Test et al. (2022)",
+        roles=[
+            RoleDef(id="sender", label="Sender", description=""),
+            RoleDef(id="receiver", label="Receiver", description=""),
+        ],
+    )
+    memberships = [
+        Membership(circuit_id=PUB, node_id=HEAD.format(7, 3), role="sender",
+                   source_reference="test", evidence_status="published", note=None),
+        Membership(circuit_id=PUB, node_id=HEAD.format(9, 9), role="receiver",
+                   source_reference="test", evidence_status="published", note="fuzzy"),
+    ]
+    graph = graph.model_copy(update={
+        "circuits": [circuit],
+        "memberships": memberships,
+        "edges": [Edge.model_validate(e) for e in edges],
+    })
+    return manifest, graph
+
+
+def edge(**overrides):
+    """A published head → role-group edge into the receivers' queries."""
+    fields = dict(
+        id="e1",
+        circuit_id=PUB,
+        source={"kind": "head", "node_id": HEAD.format(7, 3)},
+        target={"kind": "role_group", "circuit_id": PUB, "role": "receiver"},
+        channel="q",
+        positions={"source": "END", "target": "END"},
+        evidence_kind="published_experimental",
+        evidence_status="published",
+        effect=None,
+        magnitude=None,
+        conditions=[],
+        locator="§3.2, Figure 4b",
+        method_reference=None,
+        description="test",
+    )
+    return {**fields, **overrides}
+
+
+LOGITS = {"kind": "special", "id": "logits"}
+SENDERS = {"kind": "role_group", "circuit_id": PUB, "role": "sender"}
+
+
+def test_published_edges_at_their_measured_granularity_pass(bundle):
+    validate_bundle(*with_published_circuit(bundle, [
+        edge(),  # head → group
+        edge(id="e2", source=SENDERS),  # group → group (all senders patched together)
+        edge(id="e3", source={"kind": "head", "node_id": HEAD.format(9, 9)}, target=LOGITS,
+             channel="direct_logit", positions={"source": "END", "target": None},
+             effect={"metric": "logit_difference", "direction": "decrease"}),
+    ]))
+
+
+def test_endpoint_kind_selects_its_required_fields():
+    with pytest.raises(ValidationError):  # role_group without circuit_id
+        Edge.model_validate(edge(target={"kind": "role_group", "role": "receiver"}))
+    with pytest.raises(ValidationError):  # unknown kind
+        Edge.model_validate(edge(target={"kind": "mlp", "node_id": "x"}))
+    with pytest.raises(ValidationError):  # special endpoints are a closed list
+        Edge.model_validate(edge(target={"kind": "special", "id": "residual"}))
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"source": {"kind": "head", "node_id": HEAD.format(0, 0)}}, "not a member of"),
+        ({"source": {"kind": "head", "node_id": HEAD.format(99, 0)}}, "unknown node"),
+        ({"target": {"kind": "role_group", "circuit_id": PUB, "role": "x"}}, "not declared"),
+        ({"target": {"kind": "role_group", "circuit_id": "other", "role": "receiver"}},
+         "another circuit"),
+        ({"circuit_id": "circuit:missing"}, "unknown circuit"),
+        ({"source": LOGITS}, "cannot be the source"),
+        ({"target": {"kind": "special", "id": "embed"}}, "cannot be the target"),
+        ({"target": LOGITS}, "exactly for edges into logits"),  # q into logits
+        ({"channel": "direct_logit"}, "exactly for edges into logits"),  # direct into a group
+        ({"source": SENDERS, "target": SENDERS}, "same"),
+    ],
+)
+def test_rejects_edges_with_bad_endpoints_or_channel(bundle, overrides, message):
+    with pytest.raises(BundleValidationError, match=message):
+        validate_bundle(*with_published_circuit(bundle, [edge(**overrides)]))
+
+
+def test_published_edge_needs_locator_published_status_and_published_circuit(bundle):
+    for overrides, message in (
+        ({"locator": " "}, "needs a locator"),
+        ({"evidence_status": "experimental"}, "status 'published'"),
+    ):
+        with pytest.raises(BundleValidationError, match=message):
+            validate_bundle(*with_published_circuit(bundle, [edge(**overrides)]))
+    with pytest.raises(BundleValidationError, match="non-published circuit"):
+        validate_bundle(*with_published_circuit(bundle, [edge()], origin="measured_reconstruction"))
+
+
+def test_measured_edges_need_method_magnitude_and_honest_status(bundle):
+    measured = dict(evidence_kind="weight_composition", evidence_status="experimental",
+                    locator=None, method_reference="composition v1.0.0", magnitude=0.12)
+    validate_bundle(*with_published_circuit(bundle, [edge(**measured)]))
+    for overrides, message in (
+        ({"magnitude": None}, "needs a magnitude"),
+        ({"method_reference": None}, "needs a method_reference"),
+        ({"evidence_status": "published"}, "cannot have status 'published'"),
+        ({"effect": {"metric": "m", "direction": "increase"}}, "no effect on a metric"),
+        ({"evidence_kind": "causal_intervention"}, "conditions it was measured under"),
+    ):
+        with pytest.raises(BundleValidationError, match=message):
+            validate_bundle(*with_published_circuit(bundle, [edge(**{**measured, **overrides})]))
+
+
+def test_rejects_duplicate_edge_ids(bundle):
+    with pytest.raises(BundleValidationError, match="duplicate edge id"):
+        validate_bundle(*with_published_circuit(bundle, [edge(), edge()]))
+
+
+def test_edge_round_trips_through_json(bundle):
+    manifest, graph = with_published_circuit(bundle, [edge()])
+    again = Graph.model_validate_json(graph.model_dump_json())
+    assert again.edges[0].target == RoleGroupEndpoint(kind="role_group", circuit_id=PUB,
+                                                      role="receiver")

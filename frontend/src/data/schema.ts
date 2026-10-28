@@ -18,7 +18,7 @@ export const EvidenceTypeSchema = z.enum([
   "causal_intervention",
 ]);
 
-const SchemaVersionSchema = z.literal("1.2.0");
+const SchemaVersionSchema = z.literal("1.3.0");
 
 export const ModelInfoSchema = z.strictObject({
   id: z.string(),
@@ -109,7 +109,7 @@ export const RoleDefSchema = z.strictObject({
 export const CircuitSchema = z.strictObject({
   id: z.string(),
   name: z.string(),
-  origin: z.enum(["synthetic_fixture", "published"]),
+  origin: z.enum(["synthetic_fixture", "published", "measured_reconstruction"]),
   description: z.string(),
   citation: z.string().nullable(),
   roles: z.array(RoleDefSchema),
@@ -121,15 +121,48 @@ export const MembershipSchema = z.strictObject({
   role: z.string(),
   source_reference: z.string(),
   evidence_status: EvidenceStatusSchema,
+  /** e.g. "fuzzy member (Appendix C)" */
+  note: z.string().nullable(),
 });
+
+/**
+ * How an edge's evidence was obtained. A relation is stored at the granularity its evidence was
+ * measured at (head → group, group → group, ...) and never expanded into head pairs.
+ */
+export const EdgeEvidenceKindSchema = z.enum([
+  "published_schematic",
+  "published_experimental",
+  "weight_composition",
+  "causal_intervention",
+]);
+
+/** Which input of the receiver the relation goes through, or a direct effect on the output. */
+export const EdgeChannelSchema = z.enum(["q", "k", "v", "direct_logit"]);
+
+export const EndpointSchema = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("head"), node_id: z.string() }),
+  z.strictObject({ kind: z.literal("role_group"), circuit_id: z.string(), role: z.string() }),
+  z.strictObject({ kind: z.literal("special"), id: z.enum(["logits", "embed"]) }),
+]);
 
 export const EdgeSchema = z.strictObject({
   id: z.string(),
-  source_node_id: z.string(),
-  target_node_id: z.string(),
-  edge_type: z.enum(["structural", "schematic_published", "experimentally_supported_in_paper"]),
+  circuit_id: z.string(),
+  source: EndpointSchema,
+  target: EndpointSchema,
+  channel: EdgeChannelSchema,
+  /** Token roles where the relation applies, e.g. sender at "S2", receiver at "END". */
+  positions: z.strictObject({ source: z.string().nullable(), target: z.string().nullable() }).nullable(),
+  evidence_kind: EdgeEvidenceKindSchema,
   evidence_status: EvidenceStatusSchema,
-  citation: z.string().nullable(),
+  /** Direction of the SOURCE's contribution to a metric (not the sign of a patching effect). */
+  effect: z.strictObject({ metric: z.string(), direction: z.enum(["increase", "decrease"]) }).nullable(),
+  /** null for published edges: never digitised from a figure. */
+  magnitude: z.number().nullable(),
+  conditions: z.array(z.string()),
+  /** Where in the circuit's citation, e.g. "§3.1, Figure 3a, p. 5-6". */
+  locator: z.string().nullable(),
+  method_reference: z.string().nullable(),
   description: z.string(),
 });
 
@@ -189,6 +222,8 @@ export type TokensFile = z.infer<typeof TokensFileSchema>;
 export type Circuit = z.infer<typeof CircuitSchema>;
 export type Membership = z.infer<typeof MembershipSchema>;
 export type Observation = z.infer<typeof ObservationSchema>;
+export type Edge = z.infer<typeof EdgeSchema>;
+export type Endpoint = z.infer<typeof EndpointSchema>;
 export type DetectorMask = z.infer<typeof DetectorMaskSchema>;
 
 /** Checks that need both files at once. Returns problems; empty means OK. */

@@ -1,13 +1,13 @@
 """Versioned bundle schema (AGENTS.md §8). Single source of truth on the Python side."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-SchemaVersion = Literal["1.2.0"]
+SchemaVersion = Literal["1.3.0"]
 
 # Identifies the version of the data schema.
-SCHEMA_VERSION: SchemaVersion = "1.2.0"
+SCHEMA_VERSION: SchemaVersion = "1.3.0"
 
 # Indicates the validation or publication status of evidence.
 EvidenceStatus = Literal["published",
@@ -108,7 +108,8 @@ class Circuit(StrictModel):
     id: str
     name: str
     origin: Literal["synthetic_fixture",
-                    "published",]
+                    "published",
+                    "measured_reconstruction",]
     description: str
     citation: str | None
     roles: list[RoleDef]
@@ -121,18 +122,72 @@ class Membership(StrictModel):
     role: str
     source_reference: str
     evidence_status: EvidenceStatus
+    note: str | None  # e.g. "fuzzy member (Appendix C)"
+
+
+# How an edge's evidence was obtained. A relation is stored at the granularity its evidence
+# was measured at (head → group, group → group, ...) and never expanded into head pairs.
+EdgeEvidenceKind = Literal["published_schematic",
+                           "published_experimental",
+                           "weight_composition",
+                           "causal_intervention",]
+
+# Which input of the receiver the relation goes through, or a direct effect on the output.
+EdgeChannel = Literal["q", "k", "v", "direct_logit"]
+
+
+class HeadEndpoint(StrictModel):
+    """One attention head."""
+    kind: Literal["head"]
+    node_id: str
+
+
+class RoleGroupEndpoint(StrictModel):
+    """All heads with one role in one circuit, as measured together."""
+    kind: Literal["role_group"]
+    circuit_id: str
+    role: str
+
+
+class SpecialEndpoint(StrictModel):
+    """A non-head endpoint: the output logits or the token embedding."""
+    kind: Literal["special"]
+    id: Literal["logits", "embed"]
+
+
+Endpoint = Annotated[
+    HeadEndpoint | RoleGroupEndpoint | SpecialEndpoint,
+    Field(discriminator="kind"),
+]
+
+
+class EdgePositions(StrictModel):
+    """Token roles where the relation applies, e.g. sender at "S2", receiver at "END"."""
+    source: str | None
+    target: str | None
+
+
+class EdgeEffect(StrictModel):
+    """Direction of the SOURCE's contribution to a metric (not the sign of a patching effect)."""
+    metric: str
+    direction: Literal["increase", "decrease"]
 
 
 class Edge(StrictModel):
-    """Represents a structural or evidence-supported relationship between nodes."""
+    """A relation inside one circuit, typed by the evidence that supports it."""
     id: str
-    source_node_id: str
-    target_node_id: str
-    edge_type: Literal["structural",
-                       "schematic_published",
-                       "experimentally_supported_in_paper",]
+    circuit_id: str
+    source: Endpoint
+    target: Endpoint
+    channel: EdgeChannel
+    positions: EdgePositions | None
+    evidence_kind: EdgeEvidenceKind
     evidence_status: EvidenceStatus
-    citation: str | None
+    effect: EdgeEffect | None
+    magnitude: float | None  # null for published edges: never digitised from a figure
+    conditions: list[str]  # e.g. ["after_knockout:name_mover"]; required for causal edges
+    locator: str | None  # where in the circuit's citation, e.g. "§3.1, Figure 3a, p. 5-6"
+    method_reference: str | None  # our method, for measured kinds
     description: str
 
 

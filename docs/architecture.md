@@ -49,8 +49,8 @@ The camera is driven by events, not state: `resetCamera()` bumps a nonce in the 
 
 ## Bundle format
 
-- `manifest.json`: schema version (1.2.0), bundle id, `synthetic_fixture` flag, display warning, model info, experiments (suite, kind, seeds, length, tokens file, optional attention asset), provenance (including an `environment` map), and `graph_uri`.
-- `graph.json`: nodes, observations (with `parameters`, `score_std`, `per_example_scores`), masks (the `[q, k]` cells each detector averaged per experiment, see [ADR 0003](adr/0003-detector-masks-schema-1-2.md)), circuits (with role definitions), memberships, and edges.
+- `manifest.json`: schema version (1.3.0), bundle id, `synthetic_fixture` flag, display warning, model info, experiments (suite, kind, seeds, length, tokens file, optional attention asset), provenance (including an `environment` map), and `graph_uri`.
+- `graph.json`: nodes, observations (with `parameters`, `score_std`, `per_example_scores`), masks (the `[q, k]` cells each detector averaged per experiment, see [ADR 0003](adr/0003-detector-masks-schema-1-2.md)), circuits (with role definitions and an origin: `published`, `measured_reconstruction` or `synthetic_fixture`), memberships (with an optional note), and evidence-typed edges: endpoints are a head, a role group or `logits`/`embed`, with channel, token positions, evidence kind and provenance, stored at the granularity the evidence was measured at (see [ADR 0004](adr/0004-circuit-edges-schema-1-3.md)).
 - `assets/*.tokens.json`: every prompt of one experiment, ids and display strings (leading spaces kept).
 - `assets/*.attention.f16`: one example prompt's attention for all heads, little-endian float16 `[layer, head, q, k]`. Fetched once per experiment on first head selection; the provider decodes only the selected head's slice.
 

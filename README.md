@@ -2,7 +2,7 @@
 
 An evidence-aware, interactive 3D atlas of attention heads and circuits in pretrained transformers, starting with GPT-2 Small.
 
-> **Status: M2 in progress (attention heatmap done; detector overlays next).** The app opens a **measured GPT-2 Small bundle** by default: previous-token, first-token (BOS) and induction attention scores on repeated random tokens, with a paired non-repeated control. Every score is labelled `experimental`: it is a heuristic attention measurement, not causal evidence. No published circuits (IOI) are included yet. The synthetic demo fixture is still available at `?bundle=fixture`.
+> **Status: M3 in progress (circuit-centric roadmap: IOI → Induction → Copy Suppression).** The evidence-typed circuit edge contract is in place (schema 1.3.0); the verified IOI circuit is imported next. The app opens a **measured GPT-2 Small bundle** by default: previous-token, first-token (BOS) and induction attention scores on repeated random tokens, with a paired non-repeated control. Every score is labelled `experimental`: it is a heuristic attention measurement, not causal evidence. No published circuits (IOI) are included yet. The synthetic demo fixture is still available at `?bundle=fixture`.
 
 ## What works today
 
@@ -106,6 +106,8 @@ docs/       Architecture, scientific methods, UI guidelines, ADRs
 - [ADR 0001: static bundles and parallel schemas](docs/adr/0001-static-bundle-and-parallel-schemas.md)
 - [ADR 0002: measured bundles, schema 1.1.0](docs/adr/0002-measured-bundles-schema-1-1.md)
 - [ADR 0003: detector masks, schema 1.2.0](docs/adr/0003-detector-masks-schema-1-2.md)
+- [ADR 0004: evidence-typed circuit edges, schema 1.3.0](docs/adr/0004-circuit-edges-schema-1-3.md)
+- [Source record: IOI circuit (Wang et al., 2022)](docs/sources/ioi-wang-2022.md)
 
 ## Scientific stance
 
