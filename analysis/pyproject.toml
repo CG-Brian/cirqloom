@@ -10,6 +10,8 @@ dependencies = ["pydantic>=2.7,<3", "numpy>=2.0,<3"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6"]
+# Real-model capture only (M1 Phase 2+). Versions verified together on 2026-10-27.
+model = ["torch>=2.14,<3", "transformers>=5.21,<6", "transformer-lens>=4.3,<5"]
 
 [tool.setuptools.packages.find]
 include = ["cirqloom_analysis*"]
