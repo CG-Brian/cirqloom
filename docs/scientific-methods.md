@@ -54,6 +54,7 @@ Evidence types: `heuristic_attention`, `logit_attribution`, `published_annotatio
 - A bundle marked `synthetic_fixture` must carry a display warning, and may only contain `synthetic_fixture` circuits. A real bundle may not contain fixture circuits.
 - No NaN or Infinity can be serialized.
 - `per_example_scores` holds one value per prompt; `score_std` is null exactly when there are fewer than 2 prompts. One observation per (experiment, detector, head).
+- Each (experiment, detector) with observations has one mask: the exact `[q, k]` cells it averaged, sorted, unique and causal (`0 <= k <= q < seq`), with the same version and parameters as its observations. A mask with no observation is rejected.
 - An attention asset's shape must equal `[layers, heads, seq, seq]` for its experiment, and its file size must match (checked by `validate_bundle.py`).
 
 ## Planned (M2+)

@@ -12,6 +12,8 @@ export interface ExplorerState {
   /** Experiment the user picked; null means the bundle's default (see getActiveExperiment). */
   experimentId: string | null;
   activeCircuitId: string | null;
+  /** Detector whose mask the heatmap shows; kept across heads (a mask is the same for all). */
+  maskDetectorId: string | null;
   selectedNodeId: string | null;
   hoveredNodeId: string | null;
   cameraCommand: CameraCommand | null;
@@ -22,6 +24,8 @@ export interface ExplorerActions {
   setExperiment(experimentId: string): void;
   /** Activates the circuit overlay, or turns it off if it is already active. */
   toggleCircuit(circuitId: string): void;
+  /** Shows this detector's mask on the heatmap, or hides it if it is already shown. */
+  toggleMaskDetector(detectorId: string): void;
   select(nodeId: string | null): void;
   hover(nodeId: string): void;
   /** Clears hover only if `nodeId` is still the hovered node, so a late pointer-out is ignored. */
@@ -35,6 +39,7 @@ export const initialExplorerState: ExplorerState = {
   viewMode: "structure",
   experimentId: null,
   activeCircuitId: null,
+  maskDetectorId: null,
   selectedNodeId: null,
   hoveredNodeId: null,
   cameraCommand: null,
@@ -46,6 +51,8 @@ export const useExplorerStore = create<ExplorerStore>()((set) => ({
   setExperiment: (experimentId) => set({ experimentId }),
   toggleCircuit: (circuitId) =>
     set((s) => ({ activeCircuitId: s.activeCircuitId === circuitId ? null : circuitId })),
+  toggleMaskDetector: (detectorId) =>
+    set((s) => ({ maskDetectorId: s.maskDetectorId === detectorId ? null : detectorId })),
   select: (selectedNodeId) => set({ selectedNodeId }),
   hover: (hoveredNodeId) => set({ hoveredNodeId }),
   // Returning the same state object tells Zustand nothing changed, so no subscriber is notified.

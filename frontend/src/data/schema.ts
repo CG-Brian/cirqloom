@@ -18,7 +18,7 @@ export const EvidenceTypeSchema = z.enum([
   "causal_intervention",
 ]);
 
-const SchemaVersionSchema = z.literal("1.1.0");
+const SchemaVersionSchema = z.literal("1.2.0");
 
 export const ModelInfoSchema = z.strictObject({
   id: z.string(),
@@ -87,6 +87,19 @@ export const ObservationSchema = z.strictObject({
   method_reference: z.string(),
 });
 
+/**
+ * The attention cells one detector averaged in one experiment; the same for every head.
+ * Built by the Python pipeline from the exact mask it scored with. The UI only draws it.
+ */
+export const DetectorMaskSchema = z.strictObject({
+  experiment_id: z.string(),
+  detector_id: z.string(),
+  detector_version: z.string(),
+  parameters: z.record(z.string(), z.int()),
+  /** [q, k] = [destination, source], sorted and unique (checked by the Python validator). */
+  cells_qk: z.array(z.tuple([z.int().nonnegative(), z.int().nonnegative()])).min(1),
+});
+
 export const RoleDefSchema = z.strictObject({
   id: z.string(),
   label: z.string(),
@@ -144,6 +157,7 @@ export const GraphSchema = z
     bundle_id: z.string(),
     nodes: z.array(NodeSchema),
     observations: z.array(ObservationSchema),
+    masks: z.array(DetectorMaskSchema),
     circuits: z.array(CircuitSchema),
     memberships: z.array(MembershipSchema),
     edges: z.array(EdgeSchema),
@@ -175,6 +189,7 @@ export type TokensFile = z.infer<typeof TokensFileSchema>;
 export type Circuit = z.infer<typeof CircuitSchema>;
 export type Membership = z.infer<typeof MembershipSchema>;
 export type Observation = z.infer<typeof ObservationSchema>;
+export type DetectorMask = z.infer<typeof DetectorMaskSchema>;
 
 /** Checks that need both files at once. Returns problems; empty means OK. */
 export function crossCheckBundle(manifest: Manifest, graph: Graph): string[] {

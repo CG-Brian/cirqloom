@@ -4,7 +4,13 @@ import pytest
 from pydantic import ValidationError
 
 from cirqloom_analysis.export.fixture import build_fixture
-from cirqloom_analysis.schema.bundle import AttentionAsset, Experiment, Node, Observation
+from cirqloom_analysis.schema.bundle import (
+    AttentionAsset,
+    DetectorMask,
+    Experiment,
+    Node,
+    Observation,
+)
 from cirqloom_analysis.schema.validation import BundleValidationError, validate_bundle
 
 VALID_OBS = dict(
@@ -131,6 +137,70 @@ def test_rejects_duplicate_experiment_and_seeds(bundle):
     with pytest.raises(BundleValidationError) as exc_info:
         validate_bundle(manifest, graph)
     assert len(exc_info.value.problems) == 3  # duplicate id + seeds twice
+
+
+VALID_MASK = dict(
+    experiment_id="exp-test",
+    detector_id="previous_token",
+    detector_version="0.0.0",
+    parameters={"burn_in": 2},
+    cells_qk=[(2, 1), (3, 2), (4, 3)],
+)
+
+
+def with_mask(bundle, **overrides):
+    manifest, graph = with_observation(bundle)
+    mask = DetectorMask(**{**VALID_MASK, **overrides})
+    return manifest, graph.model_copy(update={"masks": [mask]})
+
+
+def test_valid_mask_passes(bundle):
+    validate_bundle(*with_mask(bundle))
+
+
+def test_mask_needs_cells():
+    with pytest.raises(ValidationError):
+        DetectorMask(**{**VALID_MASK, "cells_qk": []})
+
+
+@pytest.mark.parametrize(
+    "cells",
+    [[(2, 3)], [(8, 0)], [(2, -1)]],  # future cell, row past seq=8, negative source
+)
+def test_rejects_mask_cells_outside_the_causal_range(bundle, cells):
+    with pytest.raises(BundleValidationError, match="outside 0 <= k <= q < 8"):
+        validate_bundle(*with_mask(bundle, cells_qk=cells))
+
+
+def test_rejects_unsorted_or_repeated_mask_cells(bundle):
+    for cells in ([(3, 2), (2, 1)], [(2, 1), (2, 1)]):
+        with pytest.raises(BundleValidationError, match="sorted and unique"):
+            validate_bundle(*with_mask(bundle, cells_qk=cells))
+
+
+def test_rejects_duplicate_mask(bundle):
+    manifest, graph = with_mask(bundle)
+    graph = graph.model_copy(update={"masks": graph.masks * 2})
+    with pytest.raises(BundleValidationError, match="duplicate mask"):
+        validate_bundle(manifest, graph)
+
+
+def test_mask_must_match_its_observations(bundle):
+    for overrides in ({"parameters": {"burn_in": 1}}, {"detector_version": "0.0.1"}):
+        with pytest.raises(BundleValidationError, match="differ from its observations"):
+            validate_bundle(*with_mask(bundle, **overrides))
+
+
+def test_rejects_mask_without_observation_or_experiment(bundle):
+    with pytest.raises(BundleValidationError, match="no observation uses this mask"):
+        validate_bundle(*with_mask(bundle, detector_id="induction"))
+    with pytest.raises(BundleValidationError) as exc_info:
+        validate_bundle(*with_mask(bundle, experiment_id="exp-missing"))
+    assert any("unknown experiment" in p for p in exc_info.value.problems)
+
+
+def test_observation_without_mask_is_allowed(bundle):
+    validate_bundle(*with_observation(bundle))
 
 
 def test_experiment_needs_a_seed():

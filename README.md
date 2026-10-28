@@ -2,7 +2,7 @@
 
 An evidence-aware, interactive 3D atlas of attention heads and circuits in pretrained transformers, starting with GPT-2 Small.
 
-> **Status: M1 (measured GPT-2 bundle).** The app opens a **measured GPT-2 Small bundle** by default: previous-token, first-token (BOS) and induction attention scores on repeated random tokens, with a paired non-repeated control. Every score is labelled `experimental`: it is a heuristic attention measurement, not causal evidence. No published circuits (IOI) are included yet. The synthetic demo fixture is still available at `?bundle=fixture`.
+> **Status: M2 in progress (attention heatmap done; detector overlays next).** The app opens a **measured GPT-2 Small bundle** by default: previous-token, first-token (BOS) and induction attention scores on repeated random tokens, with a paired non-repeated control. Every score is labelled `experimental`: it is a heuristic attention measurement, not causal evidence. No published circuits (IOI) are included yet. The synthetic demo fixture is still available at `?bundle=fixture`.
 
 ## What works today
 
@@ -11,6 +11,7 @@ An evidence-aware, interactive 3D atlas of attention heads and circuits in pretr
 - Head selection from the 3D scene, or from a keyboard-navigable head list. Both stay in sync.
 - A head inspector that keeps four kinds of evidence separate: circuit membership, published annotations, measured observations and attention. Missing data is stated as missing, never shown as zero.
 - An experiment picker. The inspector shows one experiment's scores at a time (mean ± sd over prompts, n, detector settings), and labels control runs.
+- An attention heatmap for the selected head on one example prompt: row = destination, column = source, fixed 0–1 colour scale, hatched future cells, exact weight and both tokens on hover or arrow keys. "Show cells" on a detector outlines the exact cells its score averaged, exported by the Python pipeline.
 - A Python pipeline: GPT-2 adapter on TransformerLens `TransformerBridge` (pinned revision), deterministic prompt suites, numpy detectors, and a bundle exporter with lazily loaded float16 attention assets.
 - A versioned bundle schema, defined in Python (Pydantic) and TypeScript (zod), with a cross-language contract test.
 
@@ -104,6 +105,7 @@ docs/       Architecture, scientific methods, UI guidelines, ADRs
 - [UI guidelines](docs/ui-guidelines.md)
 - [ADR 0001: static bundles and parallel schemas](docs/adr/0001-static-bundle-and-parallel-schemas.md)
 - [ADR 0002: measured bundles, schema 1.1.0](docs/adr/0002-measured-bundles-schema-1-1.md)
+- [ADR 0003: detector masks, schema 1.2.0](docs/adr/0003-detector-masks-schema-1-2.md)
 
 ## Scientific stance
 

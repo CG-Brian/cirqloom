@@ -42,7 +42,7 @@ The 3D ring and the sidebar's `RoleMarker` use the same style.
 
 ## Layout
 
-- **Desktop:** top bar, then circuit sidebar (256 px) | 3D scene | head inspector (288 px), then status bar. Both panels collapse to a 36 px rail.
+- **Desktop:** top bar, then circuit sidebar (256 px) | 3D scene | head inspector (384 px, wide enough for a 101 × 101 heatmap), then status bar. Both panels collapse to a 36 px rail.
 - **Narrow screens (< 1024 px):** the scene is on top (55 vh), with the sidebar and inspector stacked below and no horizontal scroll.
 - **Camera:** 15° FOV (a long lens, so all layer planes read alike), canonical view from the front-right and above, fitted to the canvas aspect. The view refits on resize until the user moves the camera.
 
@@ -59,7 +59,16 @@ The 3D ring and the sidebar's `RoleMarker` use the same style.
 2. **Circuit membership:** role marker, role, circuit, origin badge (Synthetic fixture / Published annotation), evidence-status badge, source.
 3. **Published annotations:** only memberships whose circuit is published, with citation. Otherwise an explicit "none" note.
 4. **Measured observations:** detector, version, status, score (or "Not measured"), n, evidence type, experiment, method.
-5. **Attention:** a heatmap only when the bundle has measured runs; otherwise an explicit "unavailable" note.
+5. **Attention:** a heatmap only when the selected experiment stores attention; otherwise an explicit note (no experiments; control run, with a link to the measurement run of the same length; loading; load error). See *Attention heatmap* below.
 6. **What this does not show:** a short causal caveat.
+
+## Attention heatmap
+
+- One head, one example prompt (the experiment's stored `prompt_index`). Row = destination (query) position q, column = source (key) position k, both labelled on the axes; tokens appear in the readout.
+- Colour: one fixed 0–1 scale for every head, with a legend. Never rescaled per head, so a weak head looks weak.
+- Future cells (k > q) are hatched and read "not attendable": they are not weight 0.
+- Readout below the map: `q, query token ← k, source token`, the exact weight (float16, 3 significant digits), and "in mask". Hover or focus the map and use the arrow keys. Whitespace is visible (`␣`, `↵`, `⇥`).
+- Mask: "Show cells" on a detector row picks one detector (kept across heads and experiments). The map dims every cell outside that detector's exported mask and outlines mask cells when cells are at least 6 px. Only masks from the bundle are drawn; a missing mask is stated, never guessed. One mask at a time, so each outline belongs to one score.
+- Caveat under the map: one prompt of n, so its cells need not average to the score; float16 precision; token-to-token attention inside one head, not a connection between heads.
 
 Every status badge has a text label; dashed and dotted borders mark non-measured states.

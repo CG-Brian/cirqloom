@@ -28,6 +28,8 @@ class DetectorResult:
     """The exact settings used (defaults + overrides): recorded with every observation."""
     summary: HeadSummary
     """Per-head summary on the flat [n_layers * n_heads] axis."""
+    mask: np.ndarray
+    """The exact bool [seq, seq] mask the scores were averaged over (exported with them)."""
 
 
 @dataclass(frozen=True)
@@ -77,8 +79,11 @@ def score(
                 f"(measures {spec.prompt_suite!r}, controls {list(spec.control_suites)})"
             )
         parameters = spec.resolve_parameters()
-        summary = summarize([masked_head_mean(flat, spec.build_mask(seq, **parameters))])
-        results[spec.id] = DetectorResult(spec=spec, parameters=parameters, summary=summary)
+        mask = spec.build_mask(seq, **parameters)
+        summary = summarize([masked_head_mean(flat, mask)])
+        results[spec.id] = DetectorResult(
+            spec=spec, parameters=parameters, summary=summary, mask=mask
+        )
     return results
 
 

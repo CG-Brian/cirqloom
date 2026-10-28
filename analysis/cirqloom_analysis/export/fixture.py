@@ -77,6 +77,7 @@ def build_fixture() -> tuple[Manifest, Graph]:
         bundle_id=bundle_id,
         nodes=nodes,
         observations=[],
+        masks=[],
         circuits=[circuit],
         memberships=memberships,
         edges=[],

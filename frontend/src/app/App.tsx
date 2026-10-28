@@ -73,6 +73,7 @@ function Explorer({ manifest, view }: { manifest: Manifest; view: GraphView }) {
         </div>
         <div className="order-3 lg:flex">
           <HeadInspector
+            provider={provider}
             view={view}
             manifest={manifest}
             experiment={experiment}

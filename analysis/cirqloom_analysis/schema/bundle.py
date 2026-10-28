@@ -4,10 +4,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-SchemaVersion = Literal["1.1.0"]
+SchemaVersion = Literal["1.2.0"]
 
 # Identifies the version of the data schema.
-SCHEMA_VERSION: SchemaVersion = "1.1.0"
+SCHEMA_VERSION: SchemaVersion = "1.2.0"
 
 # Indicates the validation or publication status of evidence.
 EvidenceStatus = Literal["published",
@@ -87,6 +87,15 @@ class Observation(StrictModel):
     method_reference: str
 
 
+class DetectorMask(StrictModel):
+    """The attention cells one detector averaged in one experiment (same for every head)."""
+    experiment_id: str
+    detector_id: str
+    detector_version: str
+    parameters: dict[str, int]  # must equal the parameters of the observations it explains
+    cells_qk: list[tuple[int, int]] = Field(min_length=1)  # [q, k] = [destination, source]
+
+
 class RoleDef(StrictModel):
     """Defines a functional role within a neural circuit."""
     id: str
@@ -153,6 +162,7 @@ class Graph(StrictModel):
     bundle_id: str
     nodes: list[Node]
     observations: list[Observation]
+    masks: list[DetectorMask]
     circuits: list[Circuit]
     memberships: list[Membership]
     edges: list[Edge]

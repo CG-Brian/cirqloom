@@ -1,11 +1,14 @@
 // Right panel: everything known about the selected head, kept apart by evidence kind:
 // circuit membership, published annotations, measured observations, and attention data.
 // Missing data is stated as missing; nothing is shown as a zero or a placeholder chart.
+import type { DataProvider } from "../data/DataProvider";
 import type { Experiment, Manifest, Observation } from "../data/schema";
+import { getDetectorMask } from "../features/attention/heatmapModel";
 import { observationsForExperiment } from "../features/experiment/activeExperiment";
 import type { GraphView } from "../features/experiment/graphView";
 import { getHeadEvidence, type HeadMembership } from "../features/overlays/selectors";
 import { useExplorerStore } from "../features/selection/store";
+import { AttentionPanel } from "./AttentionPanel";
 import {
   CollapseButton,
   EmptyNote,
@@ -16,6 +19,7 @@ import {
 } from "./ui";
 
 interface HeadInspectorProps {
+  provider: DataProvider;
   view: GraphView;
   manifest: Manifest;
   /** Observations and attention are shown for this experiment only. */
@@ -59,8 +63,13 @@ function formatParameters(parameters: Record<string, number>): string | null {
   return entries.length === 0 ? null : entries.map(([k, v]) => `${k} = ${v}`).join(", ");
 }
 
-function ObservationRow({ obs }: { obs: Observation }) {
+/** Whether this row can outline its cells on the heatmap. */
+type MaskControl = "toggle" | "not-recorded" | "none";
+
+function ObservationRow({ obs, maskControl }: { obs: Observation; maskControl: MaskControl }) {
   const parameters = formatParameters(obs.parameters);
+  const shown = useExplorerStore((s) => s.maskDetectorId === obs.detector_id);
+  const toggleMaskDetector = useExplorerStore((s) => s.toggleMaskDetector);
   return (
     <li className="rounded border border-slate-800 px-2.5 py-2">
       <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
@@ -88,27 +97,38 @@ function ObservationRow({ obs }: { obs: Observation }) {
       <div className="mt-1 text-[10px] text-slate-500">
         Method: <ExternalRef value={obs.method_reference} />
       </div>
+      {maskControl === "toggle" && (
+        <button
+          type="button"
+          aria-pressed={shown}
+          aria-label={`Show cells averaged by ${obs.detector_id} on the heatmap`}
+          onClick={() => toggleMaskDetector(obs.detector_id)}
+          className={[
+            "mt-1.5 rounded border px-1.5 py-0.5 text-[10px] transition-colors",
+            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400",
+            shown
+              ? "border-amber-400/70 bg-amber-400/10 text-amber-200"
+              : "border-slate-700 text-slate-400 hover:border-slate-600 hover:text-slate-200",
+          ].join(" ")}
+        >
+          {shown ? "Showing cells on heatmap" : "Show cells"}
+        </button>
+      )}
+      {maskControl === "not-recorded" && (
+        <div className="mt-1 text-[10px] text-slate-500 italic">Cells not recorded for this detector.</div>
+      )}
     </li>
   );
 }
 
-function AttentionNote({ manifest, experiment }: { manifest: Manifest; experiment: Experiment | null }) {
-  if (manifest.experiments.length === 0 || experiment === null) {
-    return <EmptyNote>No attention data: this bundle contains no measured runs, so there is no heatmap to show.</EmptyNote>;
-  }
-  if (experiment.attention === null) {
-    return <EmptyNote>No attention matrix is stored for {experiment.id}; this run keeps scores only.</EmptyNote>;
-  }
-  const seed = experiment.seeds[experiment.attention.prompt_index];
-  return (
-    <EmptyNote>
-      Attention for one example prompt (seed {seed}) of {experiment.id} is stored in this bundle. The
-      heatmap view is not built yet.
-    </EmptyNote>
-  );
-}
-
-export function HeadInspector({ view, manifest, experiment, collapsed, onToggleCollapsed }: HeadInspectorProps) {
+export function HeadInspector({
+  provider,
+  view,
+  manifest,
+  experiment,
+  collapsed,
+  onToggleCollapsed,
+}: HeadInspectorProps) {
   const selectedNodeId = useExplorerStore((s) => s.selectedNodeId);
   const select = useExplorerStore((s) => s.select);
   const node = selectedNodeId === null ? undefined : view.nodeById.get(selectedNodeId);
@@ -131,11 +151,17 @@ export function HeadInspector({ view, manifest, experiment, collapsed, onToggleC
   const noExperiments = manifest.experiments.length === 0;
   const observations = evidence ? observationsForExperiment(evidence.observations, experiment) : [];
   const anyExperimental = observations.some((o) => o.status === "experimental");
+  const maskControl = (obs: Observation): MaskControl => {
+    if (experiment === null || experiment.attention === null || obs.score === null) {
+      return "none";
+    }
+    return getDetectorMask(view.masks, experiment.id, obs.detector_id) ? "toggle" : "not-recorded";
+  };
 
   return (
     <aside
       aria-label="Head inspector"
-      className="flex shrink-0 flex-col border-slate-800 bg-slate-950/70 max-lg:border-t lg:w-72 lg:border-l"
+      className="flex shrink-0 flex-col border-slate-800 bg-slate-950/70 max-lg:border-t lg:w-96 lg:border-l"
     >
       <div className="flex items-center justify-between border-b border-slate-800/80 px-3 py-2">
         <h2 className="text-xs font-semibold text-slate-200">Head inspector</h2>
@@ -249,7 +275,11 @@ export function HeadInspector({ view, manifest, experiment, collapsed, onToggleC
                 <>
                   <ul className="space-y-1.5">
                     {observations.map((obs) => (
-                      <ObservationRow key={`${obs.experiment_id}:${obs.detector_id}`} obs={obs} />
+                      <ObservationRow
+                        key={`${obs.experiment_id}:${obs.detector_id}`}
+                        obs={obs}
+                        maskControl={maskControl(obs)}
+                      />
                     ))}
                   </ul>
                   {anyExperimental && (
@@ -263,7 +293,13 @@ export function HeadInspector({ view, manifest, experiment, collapsed, onToggleC
             </PanelSection>
 
             <PanelSection title="Attention">
-              <AttentionNote manifest={manifest} experiment={experiment} />
+              <AttentionPanel
+                provider={provider}
+                manifest={manifest}
+                experiment={experiment}
+                nodeId={node.id}
+                masks={view.masks}
+              />
             </PanelSection>
 
             <PanelSection title="What this does not show">

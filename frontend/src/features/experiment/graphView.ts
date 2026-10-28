@@ -1,5 +1,13 @@
 // Turns raw bundle JSON into indexed, render-ready data. Scene components read only this.
-import type { Circuit, EvidenceStatus, Graph, Manifest, Membership, Observation } from "../../data/schema";
+import type {
+  Circuit,
+  DetectorMask,
+  EvidenceStatus,
+  Graph,
+  Manifest,
+  Membership,
+  Observation,
+} from "../../data/schema";
 import { boundsOf, headPosition, type Bounds, type Vec3 } from "../../scene/layout";
 
 export interface HeadView {
@@ -33,6 +41,8 @@ export interface GraphView {
   observationsByNode: Map<string, Observation[]>;
   /** Detectors with observations, in first-seen order. */
   detectors: DetectorSummary[];
+  /** Cells each detector averaged, per experiment; look up with getDetectorMask. */
+  masks: DetectorMask[];
   bounds: Bounds;
 }
 
@@ -73,6 +83,7 @@ export function buildGraphView(manifest: Manifest, graph: Graph): GraphView {
     membershipsByNode,
     observationsByNode,
     detectors: summarizeDetectors(graph.observations),
+    masks: graph.masks,
     bounds: boundsOf(nodes.map((n) => n.position)),
   };
 }

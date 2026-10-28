@@ -155,6 +155,32 @@ def test_exported_observation_matches_the_summary(runs):
     assert obs.sample_count == len(SEEDS) and obs.parameters == {}
 
 
+def test_every_experiment_detector_pair_exports_the_mask_it_scored_with(runs):
+    manifest, graph, _ = build(runs)
+    registry = default_registry()
+    seq = {e.id: e.sequence_length for e in manifest.experiments}
+    masks = {(m.experiment_id, m.detector_id): m for m in graph.masks}
+    pairs = {(o.experiment_id, o.detector_id) for o in graph.observations}
+    assert set(masks) == pairs
+    for (exp_id, detector_id), mask in masks.items():
+        spec = registry.get(detector_id)
+        expected = spec.mask(seq[exp_id], **mask.parameters)
+        assert [list(c) for c in mask.cells_qk] == np.argwhere(expected).tolist()
+        assert mask.detector_version == spec.version
+
+
+def test_induction_mask_is_the_second_copy_stripe(runs):
+    measured, _ = runs
+    _, graph, _ = build(runs)
+    mask = next(
+        m for m in graph.masks
+        if m.detector_id == "induction_attention" and m.experiment_id == measured.experiment_id
+    )
+    repeat_len = measured.prompts[0].repeat_len
+    second_copy = range(repeat_len + 1, 2 * repeat_len + 1)
+    assert mask.cells_qk == [(q, q - repeat_len + 1) for q in second_copy]
+
+
 def test_attention_asset_only_for_measurement_and_decodes_back(runs):
     measured, _ = runs
     manifest, _, assets = build(runs)

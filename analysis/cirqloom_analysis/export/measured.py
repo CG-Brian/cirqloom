@@ -21,6 +21,7 @@ from cirqloom_analysis.prompts.repeated import CONTROL_SUITE, REPEATED_SUITE
 from cirqloom_analysis.schema.bundle import (
     SCHEMA_VERSION,
     AttentionAsset,
+    DetectorMask,
     EvidenceStatus,
     Experiment,
     Graph,
@@ -87,6 +88,21 @@ def build_observations(run: ExperimentRun, info: AdapterInfo) -> list[Observatio
     return observations
 
 
+def build_masks(run: ExperimentRun) -> list[DetectorMask]:
+    """One mask per detector: the cells its scores averaged, as sorted [q, k] pairs."""
+    return [
+        DetectorMask(
+            experiment_id=run.experiment_id,
+            detector_id=detector_id,
+            detector_version=result.spec.version,
+            parameters=dict(result.parameters),
+            # argwhere walks the mask in C order, so cells come out sorted by (q, k).
+            cells_qk=[(int(q), int(k)) for q, k in np.argwhere(result.mask)],
+        )
+        for detector_id, result in run.results.items()
+    ]
+
+
 def _dump_json(payload: object) -> bytes:
     text = json.dumps(payload, indent=1, sort_keys=True, ensure_ascii=False, allow_nan=False)
     return (text + "\n").encode("utf-8")
@@ -108,6 +124,7 @@ def build_measured_bundle(
     assets: dict[str, bytes] = {}
     experiments: list[Experiment] = []
     observations: list[Observation] = []
+    masks: list[DetectorMask] = []
 
     for run in runs:
         if run.suite not in SUITE_KIND:
@@ -154,6 +171,7 @@ def build_measured_bundle(
             )
         )
         observations.extend(build_observations(run, info))
+        masks.extend(build_masks(run))
 
     nodes = [
         Node(id=head_node_id(info.model_id, layer, head), type="attention_head", layer=layer,
@@ -178,6 +196,7 @@ def build_measured_bundle(
         bundle_id=bundle_id,
         nodes=nodes,
         observations=observations,
+        masks=masks,
         circuits=[],
         memberships=[],
         edges=[],

@@ -22,6 +22,7 @@
     }
   ],
   "edges": [],
+  "masks": [],
   "memberships": [
     {
       "circuit_id": "circuit:gpt2-small:fixture-demo",
@@ -975,5 +976,5 @@
     }
   ],
   "observations": [],
-  "schema_version": "1.1.0"
+  "schema_version": "1.2.0"
 }

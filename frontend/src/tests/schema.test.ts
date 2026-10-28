@@ -72,5 +72,22 @@ describe("bundle contract shared with Python", () => {
     }
     // Every observation is labelled experimental: nothing in the bundle claims more.
     expect(new Set(graph.observations.map((o) => o.status))).toEqual(new Set(["experimental"]));
+    // One mask per (experiment, detector) that has observations.
+    const pairs = new Set(graph.observations.map((o) => `${o.experiment_id}|${o.detector_id}`));
+    expect(new Set(graph.masks.map((m) => `${m.experiment_id}|${m.detector_id}`))).toEqual(pairs);
+  });
+
+  it("rejects a mask with no cells or a malformed cell", () => {
+    const mask = {
+      experiment_id: "exp-test",
+      detector_id: "previous_token",
+      detector_version: "0.0.0",
+      parameters: { burn_in: 2 },
+      cells_qk: [[2, 1]],
+    };
+    const withMask = (m: object) => ({ ...loadJson("graph.json"), masks: [m] });
+    expect(GraphSchema.safeParse(withMask(mask)).success).toBe(true);
+    expect(GraphSchema.safeParse(withMask({ ...mask, cells_qk: [] })).success).toBe(false);
+    expect(GraphSchema.safeParse(withMask({ ...mask, cells_qk: [[2, 1, 0]] })).success).toBe(false);
   });
 });

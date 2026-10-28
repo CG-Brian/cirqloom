@@ -143,3 +143,40 @@ test("measured bundle: real scores per experiment, control labelled, no fixture 
   await expect(inspector.getByText(/keeps scores only/)).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("measured bundle: heatmap draws real attention and outlines the exported mask", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/");
+  const inspector = page.getByRole("complementary", { name: "Head inspector" });
+  await headButton(page, "L5H5").click();
+
+  const map = inspector.getByRole("img", { name: /21 by 21/ });
+  await expect(map).toBeVisible();
+  // The canvas really has pixels on it (not a placeholder).
+  const painted = await map.evaluate((canvas: HTMLCanvasElement) => {
+    const data = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data;
+    let opaque = 0;
+    for (let i = 3; i < data.length; i += 4) opaque += data[i]! > 0 ? 1 : 0;
+    return opaque;
+  });
+  expect(painted).toBeGreaterThan(0);
+
+  await inspector.getByRole("button", { name: /cells averaged by induction_attention/ }).click();
+  await expect(map).toHaveAccessibleName(/outlined: 10 cells averaged by induction_attention v1\.0\.0/);
+
+  // Hover the induction cell (q 12, k 3) of the 21×21 map: L = 10, k = q - L + 1.
+  await map.scrollIntoViewIfNeeded();
+  const box = (await map.boundingBox())!;
+  const cell = box.width / 21;
+  await page.mouse.move(box.x + 3.5 * cell, box.y + 12.5 * cell);
+  const readout = inspector.getByTestId("heatmap-readout");
+  await expect(readout).toContainText("q 12");
+  await expect(readout).toContainText("k 3");
+  await expect(readout).toContainText("in mask");
+  await expect(readout).toContainText(/weight \d\.\d{2}/);
+
+  // A future cell is reported as not attendable, never as a weight.
+  await page.mouse.move(box.x + 15.5 * cell, box.y + 2.5 * cell);
+  await expect(readout).toContainText("future position: not attendable");
+  expect(errors).toEqual([]);
+});

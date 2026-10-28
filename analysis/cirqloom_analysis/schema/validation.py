@@ -94,6 +94,34 @@ def validate_bundle(manifest: Manifest, graph: Graph) -> None:
         if count > 1:
             problems.append(f"duplicate observation {key} ({count}x)")
 
+    # j. masks: one per (experiment, detector), in range, causal, and matching the observations
+    #    they explain. Observations without a mask are allowed (not every detector is a mask).
+    experiments = {e.id: e for e in manifest.experiments}
+    explained: dict[tuple[str, str], set[tuple[str, tuple[tuple[str, int], ...]]]] = {}
+    for obs in graph.observations:
+        setting = (obs.detector_version, tuple(sorted(obs.parameters.items())))
+        explained.setdefault((obs.experiment_id, obs.detector_id), set()).add(setting)
+    for key, count in Counter((m.experiment_id, m.detector_id) for m in graph.masks).items():
+        if count > 1:
+            problems.append(f"duplicate mask {key} ({count}x)")
+    for mask in graph.masks:
+        where = f"mask {mask.detector_id}@{mask.experiment_id}"
+        exp = experiments.get(mask.experiment_id)
+        if exp is None:
+            problems.append(f"{where}: unknown experiment")
+        else:
+            seq = exp.sequence_length
+            bad = [c for c in mask.cells_qk if not 0 <= c[1] <= c[0] < seq]
+            if bad:
+                problems.append(f"{where}: cells outside 0 <= k <= q < {seq}: {bad[:3]}")
+        if mask.cells_qk != sorted(set(mask.cells_qk)):
+            problems.append(f"{where}: cells_qk must be sorted and unique")
+        settings = explained.get((mask.experiment_id, mask.detector_id))
+        if settings is None:
+            problems.append(f"{where}: no observation uses this mask")
+        elif settings != {(mask.detector_version, tuple(sorted(mask.parameters.items())))}:
+            problems.append(f"{where}: detector_version/parameters differ from its observations")
+
     # c. edges connect real nodes
     for edge in graph.edges:
         for end in (edge.source_node_id, edge.target_node_id):

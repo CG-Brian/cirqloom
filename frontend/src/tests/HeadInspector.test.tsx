@@ -1,5 +1,6 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
+import type { DataProvider, HeadAttention } from "../data/DataProvider";
 import type { Experiment, Graph, Manifest } from "../data/schema";
 import { buildGraphView } from "../features/experiment/graphView";
 import { initialExplorerState, useExplorerStore } from "../features/selection/store";
@@ -8,13 +9,27 @@ import { loadFixture } from "./fixtureView";
 
 const fixture = loadFixture();
 
+/** 8 tokens; every row attends fully to its previous position (row 0 to itself). */
+function toyAttention(experimentId: string, nodeId: string): HeadAttention {
+  const tokens = ["<|endoftext|>", " a", " b", " c", " a", " b", " c", "\n"];
+  const weights = tokens.map((_, q) => tokens.map((_, k) => (k === Math.max(0, q - 1) ? 1 : 0)));
+  return { experimentId, nodeId, promptId: `${experimentId}:seed0`, tokens, weights };
+}
+
+const stubProvider = {
+  loadHeadAttention: (experimentId: string, nodeId: string) =>
+    Promise.resolve(toyAttention(experimentId, nodeId)),
+} as unknown as DataProvider;
+
 function renderInspector(
   view = fixture.view,
   manifest: Manifest = fixture.manifest,
   experiment: Experiment | null = null,
+  provider: DataProvider = stubProvider,
 ) {
   return render(
     <HeadInspector
+      provider={provider}
       view={view}
       manifest={manifest}
       experiment={experiment}
@@ -170,11 +185,116 @@ describe("HeadInspector with observations", () => {
     expect(within(section("Attention")).getByText(/keeps scores only/)).toBeInTheDocument();
   });
 
-  it("says attention is stored but does not draw a chart", () => {
+  it("draws the stored attention after it loads, with the prompt caveat", async () => {
     useExplorerStore.setState({ selectedNodeId: nodeId });
     renderInspector(view, manifest, expA);
     const attention = section("Attention");
-    expect(within(attention).getByText(/seed 0/)).toBeInTheDocument();
-    expect(attention.querySelector("svg, canvas, table")).toBeNull();
+    expect(within(attention).getByText(/Loading attention/)).toBeInTheDocument();
+    expect(await within(attention).findByRole("img", { name: /8 by 8/ })).toBeInTheDocument();
+    expect(within(attention).getByText(/1 of 2/)).toBeInTheDocument();
+    expect(within(attention).getByText(/No mask shown/)).toBeInTheDocument();
+  });
+
+  it("reads a cell from the keyboard: real tokens, exact weight, future cells not zero", async () => {
+    useExplorerStore.setState({ selectedNodeId: nodeId });
+    renderInspector(view, manifest, expA);
+    const map = await screen.findByRole("img", { name: /8 by 8/ });
+    const readout = screen.getByTestId("heatmap-readout");
+    fireEvent.keyDown(map, { key: "ArrowDown" }); // (1, 0)
+    expect(readout).toHaveTextContent("q 1 “␣a” ← k 0 “<|endoftext|>”");
+    expect(readout).toHaveTextContent("weight 1.00");
+    fireEvent.keyDown(map, { key: "ArrowRight" });
+    fireEvent.keyDown(map, { key: "ArrowRight" }); // (1, 2): future
+    expect(readout).toHaveTextContent("future position: not attendable");
+    expect(readout).not.toHaveTextContent("weight");
+  });
+
+  it("shows a load failure instead of a chart", async () => {
+    const failing = {
+      loadHeadAttention: () => Promise.reject(new Error("HTTP 404")),
+    } as unknown as DataProvider;
+    useExplorerStore.setState({ selectedNodeId: nodeId });
+    renderInspector(view, manifest, expA, failing);
+    expect(await screen.findByRole("alert")).toHaveTextContent("HTTP 404");
+    expect(section("Attention").querySelector("canvas")).toBeNull();
+  });
+
+  it("offers the measurement run from a control run", () => {
+    useExplorerStore.setState({ selectedNodeId: nodeId });
+    renderInspector(view, manifest, expB);
+    fireEvent.click(within(section("Attention")).getByRole("button", { name: "Show exp-a" }));
+    expect(useExplorerStore.getState().experimentId).toBe("exp-a");
+  });
+});
+
+describe("HeadInspector detector masks", () => {
+  const nodeId = "model:gpt2-small:head:L0H0";
+  const expA: Experiment = {
+    id: "exp-a",
+    prompt_suite: "t",
+    kind: "measurement",
+    description: "d",
+    seeds: [0, 1],
+    sequence_length: 8,
+    tokens_uri: "t.json",
+    attention: { uri: "a.f16", dtype: "float16", shape: [12, 12, 8, 8], prompt_index: 0 },
+  };
+  const observation = (detector_id: string) => ({
+    node_id: nodeId,
+    experiment_id: "exp-a",
+    detector_id,
+    detector_version: "1.0.0",
+    evidence_type: "heuristic_attention" as const,
+    parameters: {},
+    score: 0.5,
+    score_std: 0.1,
+    per_example_scores: [0.4, 0.6],
+    status: "experimental" as const,
+    sample_count: 2,
+    method_reference: "test",
+  });
+  const graph: Graph = {
+    ...fixture.graph,
+    observations: [observation("previous_token"), observation("no_mask_detector")],
+    masks: [
+      {
+        experiment_id: "exp-a",
+        detector_id: "previous_token",
+        detector_version: "1.0.0",
+        parameters: {},
+        cells_qk: [[2, 1], [3, 2], [4, 3]],
+      },
+    ],
+  };
+  const manifest: Manifest = { ...fixture.manifest, experiments: [expA] };
+  const view = buildGraphView(manifest, graph);
+
+  it("toggles the exported mask onto the heatmap and marks cells in it", async () => {
+    useExplorerStore.setState({ selectedNodeId: nodeId });
+    renderInspector(view, manifest, expA);
+    await screen.findByRole("img", { name: /8 by 8/ });
+    const toggle = screen.getByRole("button", { name: /cells averaged by previous_token/ });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText(/3 cells averaged by/)).toBeInTheDocument();
+
+    const map = screen.getByRole("img", { name: /outlined: 3 cells averaged by previous_token v1\.0\.0/ });
+    fireEvent.keyDown(map, { key: "ArrowDown" });
+    fireEvent.keyDown(map, { key: "ArrowDown" });
+    fireEvent.keyDown(map, { key: "ArrowRight" }); // (2, 1)
+    expect(screen.getByTestId("heatmap-readout")).toHaveTextContent("in mask");
+
+    fireEvent.click(toggle);
+    expect(screen.getByText(/No mask shown/)).toBeInTheDocument();
+  });
+
+  it("says when a detector has no recorded cells instead of drawing one", async () => {
+    useExplorerStore.setState({ selectedNodeId: nodeId, maskDetectorId: "no_mask_detector" });
+    renderInspector(view, manifest, expA);
+    await screen.findByRole("img", { name: /8 by 8/ });
+    expect(screen.getByText("Cells not recorded for this detector.")).toBeInTheDocument();
+    expect(screen.getByText(/no mask is drawn/)).toBeInTheDocument();
+    expect(screen.getByText(/No mask shown/)).toBeInTheDocument();
   });
 });
