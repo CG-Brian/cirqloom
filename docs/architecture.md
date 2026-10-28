@@ -7,32 +7,41 @@ analysis/ (Python)                         frontend/ (TypeScript)
 ──────────────────                         ──────────────────────
 schema/bundle.py      Pydantic models      data/schema.ts           zod mirror + types
 schema/validation.py  cross-object rules   data/DataProvider.ts     interface + typed errors
-export/fixture.py     synthetic fixture    data/StaticBundleProvider.ts  fetch + validate
-export/bundle_writer  validate → write     features/experiment/     graphView (indexing), useBundle
-scripts/              build / validate     features/selection/      Zustand store (ids + flags)
-                                           features/overlays/       pure highlight selectors
-            │                              scene/                   R3F canvas, camera, heads
-            ▼                              panels/ + app/           sidebar, list, inspector, shell
-data/fixtures/<bundle>/manifest.json, graph.json
+models/               adapters (torch)     data/StaticBundleProvider.ts  fetch + validate + attention
+prompts/              prompt suites        data/float16.ts          attention asset decoding
+detectors/            numpy masks, specs   features/experiment/     graphView, useBundle, active experiment
+capture/              run + score, controls features/selection/     Zustand store (ids + flags)
+export/               fixture, measured,   features/overlays/       pure highlight selectors
+                      validate → write     scene/                   R3F canvas, camera, heads
+scripts/              build / validate     panels/ + app/           sidebar, list, inspector, shell
+            │
+            ▼
+data/fixtures/gpt2-small-demo/        manifest.json, graph.json
+data/bundles/gpt2-small-repeated-v1/  manifest.json, graph.json, assets/, README.md
             │  (served as Vite publicDir)
             └──────────────────────────────▶ StaticBundleProvider
 ```
 
-**Layering rule:** the frontend consumes model-agnostic, versioned nodes, memberships and observations. It never imports PyTorch or knows tensor shapes or hook names, and detectors never contain rendering logic.
+**Layering rule:** the frontend consumes model-agnostic, versioned nodes, memberships and observations. It never imports PyTorch or knows tensor shapes or hook names, and detectors never contain rendering logic. On the Python side only `models/gpt2.py` imports torch / TransformerLens; everything after the adapter is numpy.
+
+## Analysis pipeline
+
+`build_gpt2_bundle.py`: `GPT2Adapter` (pinned revision, checks 12×12 / n_ctx / vocab / BOS after loading) → for each length, `build_suite` for the repeated and control suites → `run_experiment` (one batch per experiment, `run_attention` validates token ids before and attention after the model, every registered detector that accepts the suite scores it) → `compare` (control report) → `build_measured_bundle` → `write_bundle` → re-read and `validate_bundle_files`. Detectors see heads on one flat axis (`layer * n_heads + head`); `unflatten_heads` is the only place that undoes it.
 
 ## Data flow in the app
 
 1. `StaticBundleProvider` fetches `manifest.json`, then `graph.json`. Each is parsed with zod, then `crossCheckBundle` checks the two together. Failures throw typed errors (`BundleLoadError`, `BundleSchemaError`) that the app shows verbatim.
 2. `buildGraphView` indexes the bundle once: nodes sorted by (layer, head), positions from `scene/layout.ts`, and lookups for nodes, memberships and observations per head.
-3. `App` computes the active `CircuitOverlay` once from the store's `activeCircuitId` and passes it to the scene, sidebar and status bar.
-4. Components read UI state from `useExplorerStore` with narrow selectors, then call pure selectors (`getNodeDisplayStyle`, `getLayerFrameStyle`, `getHeadEvidence`, …) to decide what to draw.
+3. `getActiveExperiment` picks the experiment to show (the user's pick, else the first measurement run); the inspector filters observations to it, because scores from different suites are not comparable.
+4. `App` computes the active `CircuitOverlay` once from the store's `activeCircuitId` and passes it to the scene, sidebar and status bar.
+5. Components read UI state from `useExplorerStore` with narrow selectors, then call pure selectors (`getNodeDisplayStyle`, `getLayerFrameStyle`, `getHeadEvidence`, …) to decide what to draw.
 
 ## State
 
 | State | Lives in | Why |
 | --- | --- | --- |
 | Bundle data | `useBundle` result → `GraphView` | Immutable once loaded |
-| Selection, hover, active circuit, view mode, camera command | Zustand store | Shared by 3D scene, list, inspector; narrow subscriptions keep re-renders small |
+| Selection, hover, active circuit, experiment, view mode, camera command | Zustand store | Shared by 3D scene, list, inspector; narrow subscriptions keep re-renders small |
 | Camera pose | `CameraController` (three.js objects) | Changes every frame; must not re-render React |
 | Panel collapse | `App` local state | Layout only |
 
@@ -40,8 +49,10 @@ The camera is driven by events, not state: `resetCamera()` bumps a nonce in the 
 
 ## Bundle format
 
-- `manifest.json`: schema version, bundle id, `synthetic_fixture` flag, display warning, model info, experiments, provenance, and `graph_uri`.
-- `graph.json`: nodes, observations, circuits (with role definitions), memberships, and edges.
+- `manifest.json`: schema version (1.1.0), bundle id, `synthetic_fixture` flag, display warning, model info, experiments (suite, kind, seeds, length, tokens file, optional attention asset), provenance (including an `environment` map), and `graph_uri`.
+- `graph.json`: nodes, observations (with `parameters`, `score_std`, `per_example_scores`), circuits (with role definitions), memberships, and edges.
+- `assets/*.tokens.json`: every prompt of one experiment, ids and display strings (leading spaces kept).
+- `assets/*.attention.f16`: one example prompt's attention for all heads, little-endian float16 `[layer, head, q, k]`. Fetched once per experiment on first head selection; the provider decodes only the selected head's slice.
 
 Schema rules shared by both languages: unknown keys are rejected, NaN and Infinity are rejected, `score` is `null` if and only if `status` is `"unavailable"`, and node ids are `model:{model}:head:L{layer}H{head}` (zero-based). See [ADR 0001](adr/0001-static-bundle-and-parallel-schemas.md).
 
@@ -50,4 +61,5 @@ Schema rules shared by both languages: unknown keys are rejected, NaN and Infini
 - **New data source:** implement `DataProvider`. The UI needs no change.
 - **New model:** the layout and scene take layer and head counts from the manifest; nothing assumes 12×12.
 - **New detector:** emit `Observation` records. The inspector already renders measured, candidate, experimental and unavailable states.
-- **Attention heatmaps (M1/M2):** `DataProvider.loadHeadAttention` exists. The static provider throws `AttentionUnavailableError` until bundles carry attention assets.
+- **Attention heatmaps (M2):** `DataProvider.loadHeadAttention` returns real tokens and weights from the measured bundle; the inspector does not draw them yet.
+- **New prompt suite or detector:** add a suite builder and a `DetectorSpec` (with `prompt_suite` / `control_suites`); the runner only pairs detectors with suites they accept.

@@ -1,8 +1,9 @@
-import type { Manifest } from "../data/schema";
+import type { Experiment, Manifest } from "../data/schema";
 import { useExplorerStore } from "../features/selection/store";
 
-export function TopBar({ manifest }: { manifest: Manifest }) {
+export function TopBar({ manifest, experiment }: { manifest: Manifest; experiment: Experiment | null }) {
   const resetCamera = useExplorerStore((s) => s.resetCamera);
+  const setExperiment = useExplorerStore((s) => s.setExperiment);
   const experiments = manifest.experiments;
 
   return (
@@ -15,14 +16,17 @@ export function TopBar({ manifest }: { manifest: Manifest }) {
         Experiment
         <select
           disabled={experiments.length === 0}
+          value={experiment?.id ?? ""}
+          onChange={(e) => setExperiment(e.target.value)}
           className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200 disabled:text-slate-500"
         >
           {experiments.length === 0 ? (
-            <option>No experiments in bundle</option>
+            <option value="">No experiments in bundle</option>
           ) : (
             experiments.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.id}
+                {e.kind === "control" ? " (control)" : ""}
               </option>
             ))
           )}

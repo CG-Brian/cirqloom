@@ -45,6 +45,11 @@ def test_tokenize_puts_bos_first_and_only_first(adapter):
     assert BOS not in ids[1:]
 
 
+def test_token_strings_keep_leading_spaces(adapter):
+    ids = adapter.tokenize("Mary and John")
+    assert adapter.token_strings(ids) == ["<|endoftext|>", "Mary", " and", " John"]
+
+
 def test_run_attention_shape_and_validity(adapter):
     batch = np.stack([repeated_prompt(5, seed) for seed in range(2)])
     patterns = adapter.run_attention(batch)  # base class validates rows, causality, shape
@@ -69,3 +74,29 @@ def test_row_in_batch_does_not_depend_on_other_rows(adapter):
     alone = adapter.run_attention(a[None, :])[0]
     batched = adapter.run_attention(np.stack([a, b]))[0]
     np.testing.assert_allclose(alone, batched, atol=1e-5)
+
+
+def test_pipeline_builds_a_valid_bundle(adapter, tmp_path):
+    # End to end on real weights, small: runs, exports, validates. Scores are not asserted:
+    # control outcomes are recorded in the bundle README, never hardcoded as passing (§12).
+    from cirqloom_analysis.capture.runner import run_experiment
+    from cirqloom_analysis.detectors.registry import default_registry
+    from cirqloom_analysis.export.bundle_writer import (
+        read_bundle,
+        validate_bundle_files,
+        write_bundle,
+    )
+    from cirqloom_analysis.export.measured import build_measured_bundle
+    from cirqloom_analysis.prompts.repeated import CONTROL_SUITE, REPEATED_SUITE, build_suite
+
+    runs = [
+        run_experiment(adapter, build_suite(suite, 5, [0, 1], adapter.info), default_registry())
+        for suite in (REPEATED_SUITE, CONTROL_SUITE)
+    ]
+    manifest, graph, assets = build_measured_bundle(
+        runs, adapter.info, adapter.token_strings, bundle_id="test:gpt2:v1", generator="test",
+        environment={}, notes="test",
+    )
+    write_bundle(manifest, graph, tmp_path, assets)
+    validate_bundle_files(tmp_path, read_bundle(tmp_path)[0])
+    assert len(graph.observations) == 2 * 3 * 144

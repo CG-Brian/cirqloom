@@ -19,6 +19,7 @@ INDUCTION_HEADS_PAPER = (
 )
 ATTENTION_SINKS_PAPER = "https://arxiv.org/abs/2309.17453"
 REPEATED_TOKENS_SUITE = "repeated_tokens_v1"
+NONREPEATED_TOKENS_SUITE = "nonrepeated_tokens_v1"
 
 
 class DetectorRegistry:
@@ -65,6 +66,7 @@ def default_registry() -> DetectorRegistry:
             method_reference=INDUCTION_HEADS_PAPER,
             description="Mean attention on k = q - 1 over rows q >= burn_in.",
             prompt_suite=REPEATED_TOKENS_SUITE,
+            control_suites=(NONREPEATED_TOKENS_SUITE,),
             build_mask=previous_token_mask,
             default_parameters={"burn_in": DEFAULT_BURN_IN},
         )
@@ -77,6 +79,7 @@ def default_registry() -> DetectorRegistry:
             method_reference=ATTENTION_SINKS_PAPER,
             description="Mean attention on k = 0 over rows q >= burn_in; may be a sink.",
             prompt_suite=REPEATED_TOKENS_SUITE,
+            control_suites=(NONREPEATED_TOKENS_SUITE,),
             build_mask=first_token_mask,
             default_parameters={"burn_in": DEFAULT_BURN_IN},
         )
@@ -89,6 +92,7 @@ def default_registry() -> DetectorRegistry:
             method_reference=INDUCTION_HEADS_PAPER,
             description="Mean attention on k = q - L + 1 over second-copy rows of (BOS, X, X).",
             prompt_suite=REPEATED_TOKENS_SUITE,
+            control_suites=(NONREPEATED_TOKENS_SUITE,),
             build_mask=induction_mask_for_seq,
         )
     )

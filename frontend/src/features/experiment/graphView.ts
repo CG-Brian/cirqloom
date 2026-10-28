@@ -1,5 +1,5 @@
 // Turns raw bundle JSON into indexed, render-ready data. Scene components read only this.
-import type { Circuit, Graph, Manifest, Membership, Observation } from "../../data/schema";
+import type { Circuit, EvidenceStatus, Graph, Manifest, Membership, Observation } from "../../data/schema";
 import { boundsOf, headPosition, type Bounds, type Vec3 } from "../../scene/layout";
 
 export interface HeadView {
@@ -8,6 +8,14 @@ export interface HeadView {
   head: number;
   label: string;
   position: Vec3;
+}
+
+/** A detector that has observations in the bundle. */
+export interface DetectorSummary {
+  id: string;
+  version: string;
+  statuses: EvidenceStatus[];
+  methodReference: string;
 }
 
 export interface GraphView {
@@ -23,6 +31,8 @@ export interface GraphView {
   membershipsByNode: Map<string, Membership[]>;
   /** Detector results per head. A head with no entry has no measurements in this bundle. */
   observationsByNode: Map<string, Observation[]>;
+  /** Detectors with observations, in first-seen order. */
+  detectors: DetectorSummary[];
   bounds: Bounds;
 }
 
@@ -62,6 +72,7 @@ export function buildGraphView(manifest: Manifest, graph: Graph): GraphView {
     circuitById: new Map(graph.circuits.map((c) => [c.id, c])),
     membershipsByNode,
     observationsByNode,
+    detectors: summarizeDetectors(graph.observations),
     bounds: boundsOf(nodes.map((n) => n.position)),
   };
 }
@@ -77,4 +88,22 @@ function groupByNode<T extends { node_id: string }>(items: T[]): Map<string, T[]
     }
   }
   return groups;
+}
+
+function summarizeDetectors(observations: Observation[]): DetectorSummary[] {
+  const byId = new Map<string, DetectorSummary>();
+  for (const obs of observations) {
+    const entry = byId.get(obs.detector_id);
+    if (!entry) {
+      byId.set(obs.detector_id, {
+        id: obs.detector_id,
+        version: obs.detector_version,
+        statuses: [obs.status],
+        methodReference: obs.method_reference,
+      });
+    } else if (!entry.statuses.includes(obs.status)) {
+      entry.statuses.push(obs.status);
+    }
+  }
+  return [...byId.values()];
 }

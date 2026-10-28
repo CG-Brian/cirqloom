@@ -4,6 +4,7 @@
 import { useMemo, useState } from "react";
 import { StaticBundleProvider } from "../data/StaticBundleProvider";
 import type { Manifest } from "../data/schema";
+import { getActiveExperiment } from "../features/experiment/activeExperiment";
 import type { GraphView } from "../features/experiment/graphView";
 import { useBundle } from "../features/experiment/useBundle";
 import { getCircuitOverlay } from "../features/overlays/selectors";
@@ -15,8 +16,19 @@ import { ModelScene } from "../scene/ModelScene";
 import { StatusBar } from "./StatusBar";
 import { TopBar } from "./TopBar";
 
+// Served from ../data (vite publicDir). The measured bundle is the default; ?bundle=fixture
+// opens the synthetic demo fixture, which the browser smoke tests use for its circuit.
+const BUNDLE_PATHS = {
+  measured: "/bundles/gpt2-small-repeated-v1",
+  fixture: "/fixtures/gpt2-small-demo",
+} as const;
+
+function bundleFromUrl(): keyof typeof BUNDLE_PATHS {
+  return new URLSearchParams(window.location.search).get("bundle") === "fixture" ? "fixture" : "measured";
+}
+
 // Created once at module scope: useBundle needs a stable provider.
-const provider = new StaticBundleProvider({ "gpt2-small": "/fixtures/gpt2-small-demo" });
+export const provider = new StaticBundleProvider({ "gpt2-small": BUNDLE_PATHS[bundleFromUrl()] });
 
 export function App() {
   const bundle = useBundle(provider, "gpt2-small");
@@ -38,13 +50,15 @@ export function App() {
 
 function Explorer({ manifest, view }: { manifest: Manifest; view: GraphView }) {
   const activeCircuitId = useExplorerStore((s) => s.activeCircuitId);
+  const experimentId = useExplorerStore((s) => s.experimentId);
+  const experiment = getActiveExperiment(manifest, experimentId);
   const overlay = useMemo(() => getCircuitOverlay(view, activeCircuitId), [view, activeCircuitId]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [inspectorCollapsed, setInspectorCollapsed] = useState(false);
 
   return (
     <div className="flex h-full flex-col">
-      <TopBar manifest={manifest} />
+      <TopBar manifest={manifest} experiment={experiment} />
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
         <main className="relative order-1 h-[55vh] shrink-0 lg:order-2 lg:h-auto lg:min-w-0 lg:flex-1">
           <ModelScene view={view} overlay={overlay} />
@@ -61,6 +75,7 @@ function Explorer({ manifest, view }: { manifest: Manifest; view: GraphView }) {
           <HeadInspector
             view={view}
             manifest={manifest}
+            experiment={experiment}
             collapsed={inspectorCollapsed}
             onToggleCollapsed={() => setInspectorCollapsed((c) => !c)}
           />

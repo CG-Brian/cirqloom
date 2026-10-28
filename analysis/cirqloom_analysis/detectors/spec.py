@@ -68,6 +68,11 @@ class DetectorSpec:
     build_mask: MaskBuilder
     """Builds the mask for a given sequence length and parameters."""
 
+    control_suites: tuple[str, ...] = ()
+    """Suites the detector may also run on as a control: same layout and length, content
+    changed (e.g. no repetition). Their scores are comparisons, not measurements of the
+    behaviour. Any other suite is rejected by the runner."""
+
     maturity: Maturity = "experimental"
 
     default_parameters: Mapping[str, int] = field(default_factory=dict)
@@ -89,6 +94,12 @@ class DetectorSpec:
             problems.append("description must not be empty")
         if not self.prompt_suite.strip():
             problems.append("prompt_suite must not be empty")
+        if not isinstance(self.control_suites, tuple) or not all(
+            isinstance(c, str) and c.strip() for c in self.control_suites
+        ):
+            problems.append(f"control_suites must be a tuple of names, got {self.control_suites!r}")
+        elif self.prompt_suite in self.control_suites:
+            problems.append("prompt_suite cannot also be a control suite")
 
         # Check 2: enum values. Type hints are not enforced at runtime, so check them here.
         if self.evidence_type not in get_args(EvidenceType):
@@ -109,6 +120,10 @@ class DetectorSpec:
         object.__setattr__(
             self, "default_parameters", MappingProxyType(dict(self.default_parameters))
         )
+
+    def accepts_suite(self, suite: str) -> bool:
+        """True for the measurement suite and its declared controls."""
+        return suite == self.prompt_suite or suite in self.control_suites
 
     def resolve_parameters(self, **overrides: int) -> dict[str, int]:
         """Defaults with overrides applied: the exact settings to record with the result."""

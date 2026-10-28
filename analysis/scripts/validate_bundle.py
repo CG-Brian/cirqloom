@@ -6,7 +6,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from cirqloom_analysis.export.bundle_writer import read_bundle
+from cirqloom_analysis.export.bundle_writer import read_bundle, validate_bundle_files
 from cirqloom_analysis.schema.validation import BundleValidationError, validate_bundle
 
 
@@ -17,6 +17,7 @@ def main() -> int:
     try:
         manifest, graph = read_bundle(args.bundle_dir)
         validate_bundle(manifest, graph)
+        validate_bundle_files(args.bundle_dir, manifest)
     except (OSError, ValidationError, BundleValidationError) as exc:
         print(f"INVALID {args.bundle_dir}\n{exc}", file=sys.stderr)
         return 1

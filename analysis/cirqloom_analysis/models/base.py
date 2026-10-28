@@ -134,6 +134,11 @@ class BaseModelAdapter(ABC):
         """Token ids [seq] for one text, with BOS prepended at position 0."""
 
     @abstractmethod
+    def token_strings(self, token_ids: np.ndarray) -> list[str]:
+        """Display string for each id in a 1-D array, leading spaces kept (" Mary", not
+        "Mary"). For labels only: never re-tokenize these strings."""
+
+    @abstractmethod
     def _run_attention(self, token_ids: np.ndarray) -> np.ndarray:
         """Library-specific forward pass. Receives already validated token ids and returns
         numpy [batch, layer, head, q, k]. Subclasses implement this, not run_attention."""

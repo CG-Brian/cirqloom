@@ -1,0 +1,178 @@
+{
+  "bundle_id": "gpt2-small:repeated-tokens:v1",
+  "display_warning": null,
+  "experiments": [
+    {
+      "attention": {
+        "dtype": "float16",
+        "prompt_index": 0,
+        "shape": [
+          12,
+          12,
+          21,
+          21
+        ],
+        "uri": "assets/repeated_tokens_v1-L10.attention.f16"
+      },
+      "description": "(BOS, X, X): X is 10 random tokens repeated once.",
+      "id": "repeated_tokens_v1:L10",
+      "kind": "measurement",
+      "prompt_suite": "repeated_tokens_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 21,
+      "tokens_uri": "assets/repeated_tokens_v1-L10.tokens.json"
+    },
+    {
+      "attention": null,
+      "description": "(BOS, X, Y): same BOS and X as the repeated suite, then 10 fresh random tokens. Control: no repetition.",
+      "id": "nonrepeated_tokens_v1:L10",
+      "kind": "control",
+      "prompt_suite": "nonrepeated_tokens_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 21,
+      "tokens_uri": "assets/nonrepeated_tokens_v1-L10.tokens.json"
+    },
+    {
+      "attention": {
+        "dtype": "float16",
+        "prompt_index": 0,
+        "shape": [
+          12,
+          12,
+          51,
+          51
+        ],
+        "uri": "assets/repeated_tokens_v1-L25.attention.f16"
+      },
+      "description": "(BOS, X, X): X is 25 random tokens repeated once.",
+      "id": "repeated_tokens_v1:L25",
+      "kind": "measurement",
+      "prompt_suite": "repeated_tokens_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 51,
+      "tokens_uri": "assets/repeated_tokens_v1-L25.tokens.json"
+    },
+    {
+      "attention": null,
+      "description": "(BOS, X, Y): same BOS and X as the repeated suite, then 25 fresh random tokens. Control: no repetition.",
+      "id": "nonrepeated_tokens_v1:L25",
+      "kind": "control",
+      "prompt_suite": "nonrepeated_tokens_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 51,
+      "tokens_uri": "assets/nonrepeated_tokens_v1-L25.tokens.json"
+    },
+    {
+      "attention": {
+        "dtype": "float16",
+        "prompt_index": 0,
+        "shape": [
+          12,
+          12,
+          101,
+          101
+        ],
+        "uri": "assets/repeated_tokens_v1-L50.attention.f16"
+      },
+      "description": "(BOS, X, X): X is 50 random tokens repeated once.",
+      "id": "repeated_tokens_v1:L50",
+      "kind": "measurement",
+      "prompt_suite": "repeated_tokens_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 101,
+      "tokens_uri": "assets/repeated_tokens_v1-L50.tokens.json"
+    },
+    {
+      "attention": null,
+      "description": "(BOS, X, Y): same BOS and X as the repeated suite, then 50 fresh random tokens. Control: no repetition.",
+      "id": "nonrepeated_tokens_v1:L50",
+      "kind": "control",
+      "prompt_suite": "nonrepeated_tokens_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 101,
+      "tokens_uri": "assets/nonrepeated_tokens_v1-L50.tokens.json"
+    }
+  ],
+  "graph_uri": "graph.json",
+  "model": {
+    "heads_per_layer": 12,
+    "hf_id": "openai-community/gpt2",
+    "id": "gpt2-small",
+    "layers": 12,
+    "revision": "607a30d783dfa663caf39e06633721c8d4cfcd7e",
+    "tokenizer_id": "openai-community/gpt2"
+  },
+  "provenance": {
+    "environment": {
+      "bos_token": "50256 (<|endoftext|>, used as BOS by convention)",
+      "device": "cpu",
+      "dtype": "float32",
+      "numpy": "2.5.4",
+      "precision": "scores rounded to 6 decimals; attention assets float16",
+      "prepend_bos": "true",
+      "python": "3.14.7",
+      "torch": "2.14.1",
+      "transformer-lens": "4.3.0",
+      "transformers": "5.21.0"
+    },
+    "generator": "analysis/scripts/build_gpt2_bundle.py",
+    "generator_version": "1",
+    "notes": "Attention-pattern detectors on repeated random tokens, with a paired non-repeated control. All detector results are 'experimental': heuristic attention scores, not causal evidence. No circuits are included."
+  },
+  "schema_version": "1.1.0",
+  "synthetic_fixture": false
+}

@@ -8,8 +8,11 @@ export interface ModelSummary {
 export interface HeadAttention {
   experimentId: string;
   nodeId: string;
+  /** The one example prompt whose attention is stored for this experiment. */
+  promptId: string;
+  /** Display string per position, leading spaces kept. */
   tokens: string[];
-  /** weights[destination][source] */
+  /** weights[destination][source], decoded from float16 (about 3 significant digits). */
   weights: number[][];
 }
 

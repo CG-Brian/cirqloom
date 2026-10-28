@@ -1,7 +1,8 @@
 // Right panel: everything known about the selected head, kept apart by evidence kind:
 // circuit membership, published annotations, measured observations, and attention data.
 // Missing data is stated as missing; nothing is shown as a zero or a placeholder chart.
-import type { Manifest, Observation } from "../data/schema";
+import type { Experiment, Manifest, Observation } from "../data/schema";
+import { observationsForExperiment } from "../features/experiment/activeExperiment";
 import type { GraphView } from "../features/experiment/graphView";
 import { getHeadEvidence, type HeadMembership } from "../features/overlays/selectors";
 import { useExplorerStore } from "../features/selection/store";
@@ -17,6 +18,8 @@ import {
 interface HeadInspectorProps {
   view: GraphView;
   manifest: Manifest;
+  /** Observations and attention are shown for this experiment only. */
+  experiment: Experiment | null;
   collapsed: boolean;
   onToggleCollapsed: () => void;
 }
@@ -51,25 +54,37 @@ function MembershipItem({ item }: { item: HeadMembership }) {
   );
 }
 
+function formatParameters(parameters: Record<string, number>): string | null {
+  const entries = Object.entries(parameters);
+  return entries.length === 0 ? null : entries.map(([k, v]) => `${k} = ${v}`).join(", ");
+}
+
 function ObservationRow({ obs }: { obs: Observation }) {
+  const parameters = formatParameters(obs.parameters);
   return (
     <li className="rounded border border-slate-800 px-2.5 py-2">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
         <span className="font-mono text-xs text-slate-200">
           {obs.detector_id} <span className="text-slate-500">v{obs.detector_version}</span>
         </span>
         <EvidenceBadge status={obs.status} />
       </div>
-      <div className="mt-1 flex items-baseline gap-2">
+      <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
         {obs.score === null ? (
           <span className="text-xs text-slate-400 italic">Not measured</span>
         ) : (
-          <span className="font-mono text-sm text-slate-100 tabular-nums">{obs.score.toPrecision(3)}</span>
+          <span className="font-mono text-sm text-slate-100 tabular-nums">
+            {obs.score.toPrecision(3)}
+            {obs.score_std !== null && (
+              <span className="text-[11px] text-slate-400"> ± {obs.score_std.toPrecision(2)} sd</span>
+            )}
+          </span>
         )}
         <span className="text-[10px] text-slate-500">
-          n = {obs.sample_count} · {obs.evidence_type.replaceAll("_", " ")} · {obs.experiment_id}
+          n = {obs.sample_count} prompts · {obs.evidence_type.replaceAll("_", " ")}
         </span>
       </div>
+      {parameters && <div className="mt-0.5 text-[10px] text-slate-500">Settings: {parameters}</div>}
       <div className="mt-1 text-[10px] text-slate-500">
         Method: <ExternalRef value={obs.method_reference} />
       </div>
@@ -77,7 +92,23 @@ function ObservationRow({ obs }: { obs: Observation }) {
   );
 }
 
-export function HeadInspector({ view, manifest, collapsed, onToggleCollapsed }: HeadInspectorProps) {
+function AttentionNote({ manifest, experiment }: { manifest: Manifest; experiment: Experiment | null }) {
+  if (manifest.experiments.length === 0 || experiment === null) {
+    return <EmptyNote>No attention data: this bundle contains no measured runs, so there is no heatmap to show.</EmptyNote>;
+  }
+  if (experiment.attention === null) {
+    return <EmptyNote>No attention matrix is stored for {experiment.id}; this run keeps scores only.</EmptyNote>;
+  }
+  const seed = experiment.seeds[experiment.attention.prompt_index];
+  return (
+    <EmptyNote>
+      Attention for one example prompt (seed {seed}) of {experiment.id} is stored in this bundle. The
+      heatmap view is not built yet.
+    </EmptyNote>
+  );
+}
+
+export function HeadInspector({ view, manifest, experiment, collapsed, onToggleCollapsed }: HeadInspectorProps) {
   const selectedNodeId = useExplorerStore((s) => s.selectedNodeId);
   const select = useExplorerStore((s) => s.select);
   const node = selectedNodeId === null ? undefined : view.nodeById.get(selectedNodeId);
@@ -98,6 +129,8 @@ export function HeadInspector({ view, manifest, collapsed, onToggleCollapsed }: 
 
   const evidence = node ? getHeadEvidence(view, node.id) : null;
   const noExperiments = manifest.experiments.length === 0;
+  const observations = evidence ? observationsForExperiment(evidence.observations, experiment) : [];
+  const anyExperimental = observations.some((o) => o.status === "experimental");
 
   return (
     <aside
@@ -194,26 +227,43 @@ export function HeadInspector({ view, manifest, collapsed, onToggleCollapsed }: 
                 </span>
               }
             >
-              {evidence.observations.length === 0 ? (
+              {experiment && (
+                <div className="mb-2 text-[11px] leading-snug text-slate-400">
+                  <span className="font-mono text-slate-300">{experiment.id}</span> · seq{" "}
+                  {experiment.sequence_length} · {experiment.seeds.length} prompts
+                  <div className="text-slate-500">{experiment.description}</div>
+                  {experiment.kind === "control" && (
+                    <div className="mt-1 rounded bg-slate-800/80 px-2 py-1 text-slate-300">
+                      Control run: no repetition. Compare with the repeated run; a content-dependent
+                      head should score low here, a positional head should not change.
+                    </div>
+                  )}
+                </div>
+              )}
+              {observations.length === 0 ? (
                 <EmptyNote>
                   No detector observations for this head
-                  {noExperiments ? " — this bundle contains no experiments." : " in this bundle."}
+                  {noExperiments ? " — this bundle contains no experiments." : " in this experiment."}
                 </EmptyNote>
               ) : (
-                <ul className="space-y-1.5">
-                  {evidence.observations.map((obs) => (
-                    <ObservationRow key={`${obs.experiment_id}:${obs.detector_id}`} obs={obs} />
-                  ))}
-                </ul>
+                <>
+                  <ul className="space-y-1.5">
+                    {observations.map((obs) => (
+                      <ObservationRow key={`${obs.experiment_id}:${obs.detector_id}`} obs={obs} />
+                    ))}
+                  </ul>
+                  {anyExperimental && (
+                    <p className="mt-2 text-[10px] leading-snug text-slate-500">
+                      Experimental: mean attention on the detector&apos;s cells. The method has not been
+                      validated against controls yet, and a high score is not a causal role.
+                    </p>
+                  )}
+                </>
               )}
             </PanelSection>
 
             <PanelSection title="Attention">
-              <EmptyNote>
-                {noExperiments
-                  ? "No attention data: this bundle contains no measured runs, so there is no heatmap to show."
-                  : "Attention heatmaps are not available in this version of the explorer."}
-              </EmptyNote>
+              <AttentionNote manifest={manifest} experiment={experiment} />
             </PanelSection>
 
             <PanelSection title="What this does not show">

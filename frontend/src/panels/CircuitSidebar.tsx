@@ -4,7 +4,7 @@ import type { GraphView } from "../features/experiment/graphView";
 import { getRoleLegend, type CircuitOverlay } from "../features/overlays/selectors";
 import { useExplorerStore } from "../features/selection/store";
 import { HeadList } from "./HeadList";
-import { CollapseButton, EmptyNote, OriginBadge, PanelSection, RoleMarker } from "./ui";
+import { CollapseButton, EmptyNote, EvidenceBadge, OriginBadge, PanelSection, RoleMarker } from "./ui";
 
 interface CircuitSidebarProps {
   view: GraphView;
@@ -105,8 +105,31 @@ export function CircuitSidebar({ view, overlay, collapsed, onToggleCollapsed }: 
           )}
         </PanelSection>
 
-        <PanelSection title="Detector overlays">
-          <EmptyNote>No functional detectors were run for this bundle.</EmptyNote>
+        <PanelSection title="Detectors in this bundle">
+          {view.detectors.length === 0 ? (
+            <EmptyNote>No functional detectors were run for this bundle.</EmptyNote>
+          ) : (
+            <>
+              <ul className="space-y-1">
+                {view.detectors.map((d) => (
+                  <li key={d.id} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs">
+                    <span className="font-mono text-slate-200">
+                      {d.id} <span className="text-slate-500">v{d.version}</span>
+                    </span>
+                    <span className="flex gap-1">
+                      {d.statuses.map((status) => (
+                        <EvidenceBadge key={status} status={status} />
+                      ))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-[10px] leading-snug text-slate-500">
+                Scores are in the head inspector. Score overlays and thresholds on the 3D
+                scene are not built yet.
+              </p>
+            </>
+          )}
         </PanelSection>
 
         <PanelSection title="Heads">

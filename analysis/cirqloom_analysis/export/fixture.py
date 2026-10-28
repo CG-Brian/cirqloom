@@ -68,6 +68,7 @@ def build_fixture() -> tuple[Manifest, Graph]:
             generator="analysis/scripts/build_fixture_bundle.py",
             generator_version="1",
             notes="No model weights loaded. No detectors run.",
+            environment={},
         ),
         graph_uri="graph.json",
     )

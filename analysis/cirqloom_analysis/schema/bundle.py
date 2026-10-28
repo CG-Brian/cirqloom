@@ -4,10 +4,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-SchemaVersion = Literal["1.0.0"]
+SchemaVersion = Literal["1.1.0"]
 
 # Identifies the version of the data schema.
-SCHEMA_VERSION: SchemaVersion = "1.0.0"
+SCHEMA_VERSION: SchemaVersion = "1.1.0"
 
 # Indicates the validation or publication status of evidence.
 EvidenceStatus = Literal["published",
@@ -40,13 +40,27 @@ class ModelInfo(StrictModel):
     tokenizer_id: str
 
 
+class AttentionAsset(StrictModel):
+    """Raw attention of one example prompt, all heads: little-endian float16, C order,
+    shape [layers, heads_per_layer, sequence_length, sequence_length], row = destination.
+    float16 keeps about 3 significant digits; rows sum to 1 only within ~1e-3."""
+    uri: str
+    dtype: Literal["float16"]
+    shape: list[int] = Field(min_length=4, max_length=4)
+    prompt_index: int = Field(ge=0)
+
+
 class Experiment(StrictModel):
-    """Records the configuration and input data of an analysis experiment."""
+    """One prompt suite at one sequence length, scored on every prompt (one batch)."""
     id: str
     prompt_suite: str
-    seed: int
+    kind: Literal["measurement",
+                  "control",]
+    description: str
+    seeds: list[int] = Field(min_length=1)  # one generated prompt per seed
     sequence_length: int = Field(gt=0)
     tokens_uri: str
+    attention: AttentionAsset | None
 
 
 class Node(StrictModel):
@@ -64,9 +78,12 @@ class Observation(StrictModel):
     detector_id: str
     detector_version: str
     evidence_type: EvidenceType
-    score: float | None
+    parameters: dict[str, int]  # exact detector settings used, e.g. {"burn_in": 2}
+    score: float | None  # mean over examples
+    score_std: float | None  # sample std (ddof=1) over examples; null when sample_count < 2
+    per_example_scores: list[float]
     status: EvidenceStatus
-    sample_count: int = Field(ge=0)
+    sample_count: int = Field(ge=0)  # number of examples (prompts), not mask cells
     method_reference: str
 
 
@@ -115,6 +132,7 @@ class Provenance(StrictModel):
     generator: str
     generator_version: str
     notes: str
+    environment: dict[str, str]  # library versions, device, dtype, tokenization policy
 
 
 class Manifest(StrictModel):
@@ -138,3 +156,17 @@ class Graph(StrictModel):
     circuits: list[Circuit]
     memberships: list[Membership]
     edges: list[Edge]
+
+
+class TokenizedPrompt(StrictModel):
+    """One prompt in an experiment's tokens file."""
+    id: str
+    seed: int
+    token_ids: list[int]
+    tokens: list[str]  # display string per id, leading spaces kept
+
+
+class TokensFile(StrictModel):
+    """Contents of Experiment.tokens_uri."""
+    experiment_id: str
+    prompts: list[TokenizedPrompt]

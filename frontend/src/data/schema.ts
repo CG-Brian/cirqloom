@@ -18,7 +18,7 @@ export const EvidenceTypeSchema = z.enum([
   "causal_intervention",
 ]);
 
-const SchemaVersionSchema = z.literal("1.0.0");
+const SchemaVersionSchema = z.literal("1.1.0");
 
 export const ModelInfoSchema = z.strictObject({
   id: z.string(),
@@ -29,12 +29,37 @@ export const ModelInfoSchema = z.strictObject({
   tokenizer_id: z.string(),
 });
 
+/** Raw attention of one example prompt: little-endian float16, C order [layer, head, q, k]. */
+export const AttentionAssetSchema = z.strictObject({
+  uri: z.string(),
+  dtype: z.literal("float16"),
+  shape: z.array(z.int().positive()).length(4),
+  prompt_index: z.int().nonnegative(),
+});
+
+/** One prompt suite at one sequence length, scored on every prompt. */
 export const ExperimentSchema = z.strictObject({
   id: z.string(),
   prompt_suite: z.string(),
-  seed: z.int(),
+  kind: z.enum(["measurement", "control"]),
+  description: z.string(),
+  seeds: z.array(z.int()).min(1),
   sequence_length: z.int().positive(),
   tokens_uri: z.string(),
+  attention: AttentionAssetSchema.nullable(),
+});
+
+/** tokens_uri contents: every prompt of one experiment, ids and display strings. */
+export const TokensFileSchema = z.strictObject({
+  experiment_id: z.string(),
+  prompts: z.array(
+    z.strictObject({
+      id: z.string(),
+      seed: z.int(),
+      token_ids: z.array(z.int().nonnegative()),
+      tokens: z.array(z.string()),
+    }),
+  ),
 });
 
 export const NodeSchema = z.strictObject({
@@ -50,7 +75,13 @@ export const ObservationSchema = z.strictObject({
   detector_id: z.string(),
   detector_version: z.string(),
   evidence_type: EvidenceTypeSchema,
+  /** Exact detector settings used, e.g. { burn_in: 2 }. */
+  parameters: z.record(z.string(), z.int()),
+  /** Mean over examples. */
   score: z.number().nullable(),
+  /** Sample std over examples; null when fewer than 2. */
+  score_std: z.number().nullable(),
+  per_example_scores: z.array(z.number()),
   status: EvidenceStatusSchema,
   sample_count: z.int().nonnegative(),
   method_reference: z.string(),
@@ -93,6 +124,7 @@ export const ProvenanceSchema = z.strictObject({
   generator: z.string(),
   generator_version: z.string(),
   notes: z.string(),
+  environment: z.record(z.string(), z.string()),
 });
 
 export const ManifestSchema = z.strictObject({
@@ -139,6 +171,7 @@ export type EvidenceStatus = z.infer<typeof EvidenceStatusSchema>;
 export type Manifest = z.infer<typeof ManifestSchema>;
 export type Graph = z.infer<typeof GraphSchema>;
 export type Experiment = z.infer<typeof ExperimentSchema>;
+export type TokensFile = z.infer<typeof TokensFileSchema>;
 export type Circuit = z.infer<typeof CircuitSchema>;
 export type Membership = z.infer<typeof MembershipSchema>;
 export type Observation = z.infer<typeof ObservationSchema>;

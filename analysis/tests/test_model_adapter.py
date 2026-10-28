@@ -131,6 +131,9 @@ class FakeAdapter(BaseModelAdapter):
     def tokenize(self, text: str) -> np.ndarray:
         return ids([BOS, *[int(c) for c in text]])[0]
 
+    def token_strings(self, token_ids: np.ndarray) -> list[str]:
+        return [f" t{int(i)}" for i in token_ids]
+
     def _run_attention(self, token_ids: np.ndarray) -> np.ndarray:
         self.calls += 1
         if self.output is not None:

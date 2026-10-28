@@ -12,10 +12,11 @@
     "tokenizer_id": "openai-community/gpt2"
   },
   "provenance": {
+    "environment": {},
     "generator": "analysis/scripts/build_fixture_bundle.py",
     "generator_version": "1",
     "notes": "No model weights loaded. No detectors run."
   },
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "synthetic_fixture": true
 }

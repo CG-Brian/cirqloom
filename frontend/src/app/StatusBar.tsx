@@ -9,9 +9,15 @@ interface StatusBarProps {
 export function StatusBar({ manifest, overlay }: StatusBarProps) {
   return (
     <footer className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-800 bg-slate-950 px-4 py-1.5 text-[11px] text-slate-400">
-      {manifest.synthetic_fixture && (
+      {manifest.synthetic_fixture ? (
         <span role="status" className="rounded bg-amber-500/15 px-2 py-0.5 font-medium text-amber-300">
           {manifest.display_warning}
+        </span>
+      ) : (
+        <span role="status" className="rounded bg-slate-800 px-2 py-0.5 text-slate-300">
+          Measured on {manifest.model.hf_id}
+          {manifest.model.revision ? ` @ ${manifest.model.revision.slice(0, 7)}` : ""} · attention
+          scores are heuristic, not causal
         </span>
       )}
       <span>

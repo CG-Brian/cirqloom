@@ -1,6 +1,6 @@
 import { act, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Graph } from "../data/schema";
+import type { Experiment, Graph, Manifest } from "../data/schema";
 import { buildGraphView } from "../features/experiment/graphView";
 import { initialExplorerState, useExplorerStore } from "../features/selection/store";
 import { HeadInspector } from "../panels/HeadInspector";
@@ -8,9 +8,19 @@ import { loadFixture } from "./fixtureView";
 
 const fixture = loadFixture();
 
-function renderInspector(view = fixture.view, manifest = fixture.manifest) {
+function renderInspector(
+  view = fixture.view,
+  manifest: Manifest = fixture.manifest,
+  experiment: Experiment | null = null,
+) {
   return render(
-    <HeadInspector view={view} manifest={manifest} collapsed={false} onToggleCollapsed={() => {}} />,
+    <HeadInspector
+      view={view}
+      manifest={manifest}
+      experiment={experiment}
+      collapsed={false}
+      onToggleCollapsed={() => {}}
+    />,
   );
 }
 
@@ -74,35 +84,97 @@ describe("HeadInspector with observations", () => {
     evidence_type: "heuristic_attention" as const,
     method_reference: "test",
   };
+  const experiment = (id: string, kind: Experiment["kind"]): Experiment => ({
+    id,
+    prompt_suite: "t",
+    kind,
+    description: `description of ${id}`,
+    seeds: [0, 1],
+    sequence_length: 8,
+    tokens_uri: "t.json",
+    attention: kind === "measurement" ? { uri: "a.f16", dtype: "float16", shape: [12, 12, 8, 8], prompt_index: 0 } : null,
+  });
+  const expA = experiment("exp-a", "measurement");
+  const expB = experiment("exp-b", "control");
   const graph: Graph = {
     ...fixture.graph,
     observations: [
-      { ...obs, detector_id: "previous_token", score: 0.8123, status: "measured", sample_count: 40 },
-      { ...obs, detector_id: "first_token", score: null, status: "unavailable", sample_count: 0 },
+      {
+        ...obs,
+        detector_id: "previous_token",
+        parameters: { burn_in: 2 },
+        score: 0.8123,
+        score_std: 0.0412,
+        per_example_scores: Array.from({ length: 40 }, () => 0.8123),
+        status: "measured",
+        sample_count: 40,
+      },
+      {
+        ...obs,
+        detector_id: "first_token",
+        parameters: {},
+        score: null,
+        score_std: null,
+        per_example_scores: [],
+        status: "unavailable",
+        sample_count: 0,
+      },
+      {
+        ...obs,
+        experiment_id: "exp-b",
+        detector_id: "induction",
+        parameters: {},
+        score: 0.0042,
+        score_std: 0.001,
+        per_example_scores: [0.004, 0.0044],
+        status: "experimental",
+        sample_count: 2,
+      },
     ],
   };
-  const manifest = {
-    ...fixture.manifest,
-    experiments: [
-      { id: "exp-a", prompt_suite: "t", seed: 0, sequence_length: 8, tokens_uri: "t.json" },
-    ],
-  };
+  const manifest: Manifest = { ...fixture.manifest, experiments: [expA, expB] };
+  const view = buildGraphView(manifest, graph);
 
-  it("shows a measured score with its sample count and status", () => {
+  it("shows a measured score with its spread, sample count, settings and status", () => {
     useExplorerStore.setState({ selectedNodeId: nodeId });
-    renderInspector(buildGraphView(manifest, graph), manifest);
+    renderInspector(view, manifest, expA);
     const measured = section("Measured observations");
-    expect(within(measured).getByText("0.812")).toBeInTheDocument();
-    expect(within(measured).getByText(/n = 40/)).toBeInTheDocument();
+    expect(within(measured).getByText(/0\.812/)).toBeInTheDocument();
+    expect(within(measured).getByText(/± 0\.041 sd/)).toBeInTheDocument();
+    expect(within(measured).getByText(/n = 40 prompts/)).toBeInTheDocument();
+    expect(within(measured).getByText("Settings: burn_in = 2")).toBeInTheDocument();
     expect(within(measured).getByText("Measured")).toBeInTheDocument();
   });
 
   it("shows an unavailable result as 'Not measured', never as zero", () => {
     useExplorerStore.setState({ selectedNodeId: nodeId });
-    renderInspector(buildGraphView(manifest, graph), manifest);
+    renderInspector(view, manifest, expA);
     const measured = section("Measured observations");
     expect(within(measured).getByText("Not measured")).toBeInTheDocument();
     expect(within(measured).getByText("Unavailable")).toBeInTheDocument();
     expect(measured.textContent).not.toMatch(/\b0\.0+\b/);
+  });
+
+  it("shows only the selected experiment's observations", () => {
+    useExplorerStore.setState({ selectedNodeId: nodeId });
+    renderInspector(view, manifest, expA);
+    expect(within(section("Measured observations")).queryByText(/^induction/)).toBeNull();
+  });
+
+  it("labels a control run and warns that experimental scores are not causal", () => {
+    useExplorerStore.setState({ selectedNodeId: nodeId });
+    renderInspector(view, manifest, expB);
+    const measured = section("Measured observations");
+    expect(within(measured).getByText(/Control run/)).toBeInTheDocument();
+    expect(within(measured).getByText(/not a causal role/)).toBeInTheDocument();
+    expect(within(section("Attention")).getByText(/keeps scores only/)).toBeInTheDocument();
+  });
+
+  it("says attention is stored but does not draw a chart", () => {
+    useExplorerStore.setState({ selectedNodeId: nodeId });
+    renderInspector(view, manifest, expA);
+    const attention = section("Attention");
+    expect(within(attention).getByText(/seed 0/)).toBeInTheDocument();
+    expect(attention.querySelector("svg, canvas, table")).toBeNull();
   });
 });

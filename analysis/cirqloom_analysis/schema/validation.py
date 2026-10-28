@@ -45,6 +45,23 @@ def validate_bundle(manifest: Manifest, graph: Graph) -> None:
     circuits = {c.id: c for c in graph.circuits}
     experiment_ids = {e.id for e in manifest.experiments}
 
+    # h. experiments are unique and their attention asset matches their declared shape
+    for exp_id, count in Counter(e.id for e in manifest.experiments).items():
+        if count > 1:
+            problems.append(f"duplicate experiment id {exp_id!r} ({count}x)")
+    for exp in manifest.experiments:
+        if len(set(exp.seeds)) != len(exp.seeds):
+            problems.append(f"experiment {exp.id!r}: seeds are not distinct")
+        if exp.attention is not None:
+            seq = exp.sequence_length
+            want = [model.layers, model.heads_per_layer, seq, seq]
+            if exp.attention.shape != want:
+                problems.append(
+                    f"experiment {exp.id!r}: attention shape {exp.attention.shape}, expected {want}"
+                )
+            if exp.attention.prompt_index >= len(exp.seeds):
+                problems.append(f"experiment {exp.id!r}: attention prompt_index out of range")
+
     # c + d. memberships reference real things and declared roles
     for mem in graph.memberships:
         if mem.node_id not in node_ids:
@@ -66,6 +83,16 @@ def validate_bundle(manifest: Manifest, graph: Graph) -> None:
             problems.append(f"{where}: score must be null if and only if status is 'unavailable'")
         if obs.score is not None and obs.sample_count == 0:
             problems.append(f"{where}: a score with sample_count=0 is not a measurement")
+        if len(obs.per_example_scores) != (obs.sample_count if obs.score is not None else 0):
+            problems.append(f"{where}: per_example_scores must hold one score per example")
+        if (obs.score_std is None) != (obs.score is None or obs.sample_count < 2):
+            problems.append(f"{where}: score_std must be null exactly when fewer than 2 examples")
+
+    # i. one observation per (experiment, detector, node)
+    keys = Counter((o.experiment_id, o.detector_id, o.node_id) for o in graph.observations)
+    for key, count in keys.items():
+        if count > 1:
+            problems.append(f"duplicate observation {key} ({count}x)")
 
     # c. edges connect real nodes
     for edge in graph.edges:

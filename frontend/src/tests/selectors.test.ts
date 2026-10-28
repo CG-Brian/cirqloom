@@ -18,13 +18,13 @@ import {
 const id = (layer: number, head: number) => `model:toy:head:L${layer}H${head}`;
 
 const manifest: Manifest = {
-  schema_version: "1.0.0",
+  schema_version: "1.1.0",
   bundle_id: "toy",
   synthetic_fixture: true,
   display_warning: "toy",
   model: { id: "toy", hf_id: "toy", revision: null, layers: 2, heads_per_layer: 2, tokenizer_id: "toy" },
   experiments: [],
-  provenance: { generator: "test", generator_version: "0", notes: "" },
+  provenance: { generator: "test", generator_version: "0", notes: "", environment: {} },
   graph_uri: "graph.json",
 };
 
@@ -37,7 +37,7 @@ const membership = (circuit_id: string, node_id: string, role: string) => ({
 });
 
 const graph: Graph = {
-  schema_version: "1.0.0",
+  schema_version: "1.1.0",
   bundle_id: "toy",
   nodes: [0, 1].flatMap((layer) =>
     [0, 1].map((head) => ({ id: id(layer, head), type: "attention_head" as const, layer, head })),

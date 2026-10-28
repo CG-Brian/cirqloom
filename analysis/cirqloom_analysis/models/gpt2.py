@@ -89,6 +89,11 @@ class GPT2Adapter(BaseModelAdapter):
         tokens = self._model.to_tokens(text, prepend_bos=True)  # torch [1, seq]
         return tokens[0].detach().cpu().numpy().astype(np.int64)
 
+    def token_strings(self, token_ids: np.ndarray) -> list[str]:
+        # Decode one id at a time so each label is exactly that token. A byte-level fragment
+        # of a multi-byte character decodes to U+FFFD on its own; that is the honest label.
+        return [self._model.tokenizer.decode([int(i)]) for i in token_ids]
+
     def _run_attention(self, token_ids: np.ndarray) -> np.ndarray:
         # Inputs are already validated by BaseModelAdapter.run_attention.
 

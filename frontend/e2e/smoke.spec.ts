@@ -1,4 +1,6 @@
-// Browser smoke tests (AGENTS.md §12): the real app, real WebGL canvas, real fixture bundle.
+// Browser smoke tests (AGENTS.md §12): the real app, real WebGL canvas, real bundles.
+// Most tests use the synthetic fixture (?bundle=fixture) for its demo circuit; the last one
+// opens the default measured GPT-2 bundle.
 import { expect, test, type Page } from "@playwright/test";
 import { PerspectiveCamera, Vector3 } from "three";
 import { boundsOf, CAMERA_FOV, canonicalCameraPose, headPosition } from "../src/scene/layout";
@@ -22,8 +24,10 @@ function trackErrors(page: Page): string[] {
 const headButton = (page: Page, label: string) =>
   page.getByRole("button", { name: new RegExp(`^${label}\\b`) });
 
-test.beforeEach(async ({ page }) => {
-  await page.goto("/");
+test.beforeEach(async ({ page }, testInfo) => {
+  if (!testInfo.title.startsWith("measured bundle")) {
+    await page.goto("/?bundle=fixture");
+  }
 });
 
 test("loads the scene and labels the fixture", async ({ page }) => {
@@ -117,5 +121,25 @@ test("reset view and panel collapse run without console errors", async ({ page }
   await page.getByRole("button", { name: "Collapse head inspector" }).click();
   await page.waitForTimeout(500);
 
+  expect(errors).toEqual([]);
+});
+
+test("measured bundle: real scores per experiment, control labelled, no fixture warning", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("/");
+  await expect(page.getByRole("status")).toContainText("Measured on openai-community/gpt2");
+  await expect(page.getByText("Demo fixture — not measured model data.")).toHaveCount(0);
+
+  const inspector = page.getByRole("complementary", { name: "Head inspector" });
+  await headButton(page, "L5H5").click();
+  await expect(inspector.getByText("model:gpt2-small:head:L5H5")).toBeVisible();
+  await expect(inspector.getByText("repeated_tokens_v1:L10", { exact: true })).toBeVisible();
+  await expect(inspector.getByText(/^induction_attention/)).toBeVisible();
+  await expect(inspector.getByText(/n = 8 prompts/).first()).toBeVisible();
+  await expect(inspector.getByText("Experimental").first()).toBeVisible();
+
+  await page.getByLabel("Experiment").selectOption("nonrepeated_tokens_v1:L10");
+  await expect(inspector.getByText(/Control run/)).toBeVisible();
+  await expect(inspector.getByText(/keeps scores only/)).toBeVisible();
   expect(errors).toEqual([]);
 });
