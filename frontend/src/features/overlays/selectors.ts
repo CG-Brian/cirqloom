@@ -211,6 +211,13 @@ export function getLayerFrameStyle(layer: number, overlay: CircuitOverlay | null
   return { edgeColor: PALETTE.layerFrame, edgeOpacity: 0.3, fillColor, fillOpacity: 0.06 };
 }
 
+/** Where a circuit's roles come from, in words, for every place a role is named. */
+export const ORIGIN_LABEL: Record<Circuit["origin"], string> = {
+  published: "published annotation",
+  measured_reconstruction: "measured reconstruction",
+  synthetic_fixture: "synthetic fixture",
+};
+
 export interface HeadMembership {
   membership: Membership;
   circuit: Circuit;

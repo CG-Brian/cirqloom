@@ -3,7 +3,7 @@
 import { forwardRef } from "react";
 import { EVIDENCE_KIND_LABEL, edgeGroupLabel, type VisualEdgeGroup } from "../features/circuits/edgeGroups";
 import type { GraphView } from "../features/experiment/graphView";
-import type { CircuitOverlay } from "../features/overlays/selectors";
+import { ORIGIN_LABEL, type CircuitOverlay } from "../features/overlays/selectors";
 import { useExplorerStore } from "../features/selection/store";
 
 interface HoverTooltipProps {
@@ -31,7 +31,11 @@ export const HoverTooltip = forwardRef<HTMLDivElement, HoverTooltipProps>(functi
       className="pointer-events-none absolute top-0 left-0 z-10 whitespace-nowrap rounded bg-slate-900/90 px-2 py-0.5 text-xs text-slate-100 shadow"
     >
       {node && <span className="font-mono">{node.label}</span>}
-      {roles.length > 0 && <span className="ml-2 text-slate-400">{roles.join(", ")}</span>}
+      {roles.length > 0 && overlay && (
+        <span className="ml-2 text-slate-400">
+          {roles.join(", ")} · {ORIGIN_LABEL[overlay.circuit.origin]}
+        </span>
+      )}
       {group && (
         <>
           <span>{edgeGroupLabel(view, group)}</span>

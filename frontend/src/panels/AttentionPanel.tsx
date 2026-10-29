@@ -2,7 +2,7 @@
 // control run, loading, failed load, heatmap) and hands the heatmap the mask the user picked.
 import type { DataProvider } from "../data/DataProvider";
 import type { DetectorMask, Experiment, Manifest } from "../data/schema";
-import { getDetectorMask, measurementFor } from "../features/attention/heatmapModel";
+import { getDetectorMask, measurementsFor } from "../features/attention/heatmapModel";
 import { useHeadAttention } from "../features/attention/useHeadAttention";
 import { useExplorerStore } from "../features/selection/store";
 import { AttentionHeatmap, type HeatmapMask } from "./AttentionHeatmap";
@@ -26,13 +26,13 @@ export function AttentionPanel({ provider, manifest, experiment, nodeId, masks }
     return <EmptyNote>No attention data: this bundle contains no measured runs, so there is no heatmap to show.</EmptyNote>;
   }
   if (!stored || experiment.attention === null) {
-    const suggestion = measurementFor(manifest, experiment);
+    const suggestions = measurementsFor(manifest, experiment);
     return (
       <EmptyNote>
         No attention matrix is stored for {experiment.id}; this run keeps scores only. Attention is
         stored for one prompt of each measurement run.
-        {suggestion && (
-          <>
+        {suggestions.map((suggestion) => (
+          <span key={suggestion.id}>
             {" "}
             <button
               type="button"
@@ -41,8 +41,8 @@ export function AttentionPanel({ provider, manifest, experiment, nodeId, masks }
             >
               Show {suggestion.id}
             </button>
-          </>
-        )}
+          </span>
+        ))}
       </EmptyNote>
     );
   }

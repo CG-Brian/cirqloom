@@ -78,3 +78,16 @@ describe("relation selection", () => {
     expect(store()).toMatchObject({ hoveredEdgeGroupId: null, selectedEdgeGroupId: null });
   });
 });
+
+describe("camera commands", () => {
+  it("issues distinct focus requests carrying their bounds", () => {
+    const bounds = { min: [0, 0, 0], max: [1, 1, 1], center: [0.5, 0.5, 0.5], radius: 0.87 } as const;
+    store().focusCamera({ ...bounds, min: [...bounds.min], max: [...bounds.max], center: [...bounds.center] });
+    const first = store().cameraCommand;
+    store().resetCamera();
+    const second = store().cameraCommand;
+    expect(first).toMatchObject({ kind: "focus", bounds: { radius: 0.87 } });
+    expect(second?.kind).toBe("reset");
+    expect(second!.nonce).toBe(first!.nonce + 1);
+  });
+});

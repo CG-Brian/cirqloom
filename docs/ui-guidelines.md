@@ -61,6 +61,11 @@ The 3D ring and the sidebar's `RoleMarker` use the same style.
 - Hover (3D or the sidebar list) emphasises the relation and the heads its evidence is about (sender heads, receiving group members); everything else recedes. Click opens the **Relation inspector** in place of the head inspector: sender, receiver, channel, positions, effect (the sender's own contribution), conditions, magnitude, a granularity statement, citation and locator, every original evidence record (with "Inspect head"), and what the ribbon does not show. A head's inspector lists the relations it takes part in.
 - The sidebar's "Relations" list is the keyboard path to every ribbon. Escape or an empty-space click clears the selection.
 
+## Focus and provenance labels
+
+- "Focus camera on <circuit>" (sidebar, when a circuit is shown), "Focus" in the relation inspector and in the head inspector animate the camera to frame the circuit (hubs, curves, logits, members), the relation (its curve, anchors and heads) or the head, from the canonical direction (`circuitFocusBounds`, `relationFocusBounds`, `headFocusBounds`, minimum half-extent 1.2). Reset view returns to the overview; after a focus, resizes no longer refit the view.
+- Wherever a role is named outside the inspector, its origin is named too: head list labels ("… (published annotation)"), the hover tooltip ("Name Mover · published annotation") and the status bar overlay ("IOI (published annotation)").
+
 ## Observed attention alignment (relation inspector)
 
 - Section "Observed attention (measured here)", badge Experimental, below the published claim and its source.

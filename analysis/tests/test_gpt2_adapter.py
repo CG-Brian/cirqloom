@@ -121,3 +121,9 @@ def test_ioi_prompts_map_names_and_positions_with_the_real_tokenizer(adapter, pa
             assert strings[pos["S1"]] == strings[pos["S2"]] != strings[pos["IO"]]
             assert strings[pos["IO"]].startswith(" ") and strings[pos["END"]] == " to"
             assert p.text is not None and strings[pos["IO"]].strip() in p.text
+        for c in build_ioi_suite(index, pattern, list(range(4)), adapter.tokenize,
+                                 adapter.token_strings, control=True):
+            strings = adapter.token_strings(c.token_ids)
+            pos = c.positions
+            assert len({strings[pos["IO"]], strings[pos["S1"]], strings[pos["S2"]]}) == 3
+            assert c.positions == prompts[0].positions

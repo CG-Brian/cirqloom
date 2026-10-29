@@ -9,7 +9,13 @@ import {
   getEdgeDisplayStyle,
   getVisualEdgeGroups,
 } from "../features/circuits/edgeGroups";
-import { getCircuitLayout, logitsPosition } from "../features/circuits/circuitLayout";
+import {
+  circuitFocusBounds,
+  getCircuitLayout,
+  headFocusBounds,
+  logitsPosition,
+  relationFocusBounds,
+} from "../features/circuits/circuitLayout";
 import { circuitBandY } from "../scene/layout";
 import { loadMeasured } from "./fixtureView";
 
@@ -144,5 +150,40 @@ describe("getCircuitLayout", () => {
         expect(p[0]).toBeLessThanOrEqual(view.bounds.max[0] + 1e-9);
       }
     }
+  });
+});
+
+describe("focus bounds", () => {
+  const layout = getCircuitLayout(view, IOI, groups);
+  const inside = (b: { min: number[]; max: number[] }, p: readonly number[]) =>
+    p.every((v, i) => v >= b.min[i]! - 1e-9 && v <= b.max[i]! + 1e-9);
+
+  it("frames every hub, curve point and member head of the circuit", () => {
+    const b = circuitFocusBounds(view, layout);
+    for (const a of layout.anchors.values()) {
+      expect(inside(b, a.position)).toBe(true);
+      for (const id of a.nodeIds) {
+        expect(inside(b, view.nodeById.get(id)!.position)).toBe(true);
+      }
+    }
+    for (const e of layout.edges) {
+      expect(e.points.every((p) => inside(b, p))).toBe(true);
+    }
+  });
+
+  it("frames one relation tighter than the circuit, with its heads", () => {
+    const fig4b = groups.find((g) => g.locator?.includes("Figure 4b"))!;
+    const b = relationFocusBounds(view, layout, fig4b);
+    const { senders, receivers } = edgeGroupHeads(view, fig4b);
+    for (const id of [...senders, ...receivers]) {
+      expect(inside(b, view.nodeById.get(id)!.position)).toBe(true);
+    }
+    expect(b.radius).toBeLessThan(circuitFocusBounds(view, layout).radius);
+  });
+
+  it("keeps room around a single head", () => {
+    const b = headFocusBounds(view, head(9, 9));
+    view.nodeById.get(head(9, 9))!.position.forEach((v, i) => expect(b.center[i]).toBeCloseTo(v));
+    expect(b.max[0] - b.min[0]).toBeCloseTo(2.4);
   });
 });

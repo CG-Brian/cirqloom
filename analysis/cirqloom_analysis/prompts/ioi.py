@@ -18,6 +18,12 @@ Positions are decided here, from the tokenizer's own output, and checked:
   - the last token is " to".
 Fillers that are not one token are dropped before sampling (and the drop is reported).
 
+Control (`ioi_abc_v1`, a paired pABC-style control): the same template, seed, IO, S1, place
+and object as the IOI prompt it pairs with, but the S2 slot holds a third name C, so no name is
+repeated. Token positions are identical (one-token names), so every position detector reads the
+same cells and only the duplication differs. The paper's pABC draws three fresh names; keeping
+IO and S1 makes the comparison paired, like the repeated-token control.
+
 No torch here: the tokenizer is passed in (the adapter's tokenize and token_strings).
 """
 
@@ -31,6 +37,7 @@ from cirqloom_analysis.detectors.masks import check_integer
 from cirqloom_analysis.prompts.repeated import Prompt
 
 IOI_SUITE = "ioi_templates_v1"
+IOI_ABC_SUITE = "ioi_abc_v1"
 _SALT = 20_221_101
 
 SOURCE = (
@@ -130,13 +137,19 @@ def single_token_vocabulary(tokenize: Tokenize) -> Vocabulary:
     return vocab
 
 
-def fill(text: str, io: str, s: str, place: str, obj: str) -> str:
-    """The prompt text, ending just before the final [A] (the answer)."""
+def fill(text: str, io: str, s: str, place: str, obj: str, s2: str | None = None) -> str:
+    """The prompt text, ending just before the final [A] (the answer).
+
+    `s2` replaces the name in the S2 slot (the second [B]) for the ABC control.
+    """
     if not text.endswith(" to [A]"):
         raise ValueError(f"template must end with ' to [A]': {text!r}")
     prompt = text[: -len(" [A]")]
-    return (prompt.replace("[A]", io).replace("[B]", s).replace("[PLACE]", place)
-            .replace("[OBJECT]", obj))
+    if s2 is not None:
+        second = prompt.index("[B]", prompt.index("[B]") + 3)
+        prompt = prompt[:second] + "[C]" + prompt[second + 3:]
+    return (prompt.replace("[A]", io).replace("[B]", s).replace("[C]", s2 or "")
+            .replace("[PLACE]", place).replace("[OBJECT]", obj))
 
 
 def locate(token_ids: np.ndarray, io_id: int, s_id: int, end_token: str,
@@ -159,6 +172,23 @@ def locate(token_ids: np.ndarray, io_id: int, s_id: int, end_token: str,
             "END": int(token_ids.shape[0] - 1)}
 
 
+def locate_abc(token_ids: np.ndarray, io_id: int, s_id: int, c_id: int, end_token: str,
+               token_strings: Callable[[np.ndarray], list[str]]) -> dict[str, int]:
+    """Positions in an ABC control prompt: IO, S (S1) and C (in the S2 slot) once each."""
+    found = {label: np.flatnonzero(token_ids == i) for label, i in
+             (("IO", io_id), ("S1", s_id), ("S2", c_id))}
+    problems = [f"{label} occurs {at.size} times, expected 1"
+                for label, at in found.items() if at.size != 1]
+    last = token_strings(token_ids[-1:])[0]
+    if last != end_token:
+        problems.append(f"last token is {last!r}, expected {end_token!r}")
+    if problems:
+        raise ValueError("; ".join(problems))
+    s1 = int(found["S1"][0])
+    return {"IO": int(found["IO"][0]), "S1": s1, "S1+1": s1 + 1, "S2": int(found["S2"][0]),
+            "END": int(token_ids.shape[0] - 1)}
+
+
 def ioi_prompt(
     index: int,
     pattern: Pattern,
@@ -166,8 +196,11 @@ def ioi_prompt(
     tokenize: Tokenize,
     token_strings: Callable[[np.ndarray], list[str]],
     vocab: Vocabulary,
+    control: bool = False,
 ) -> Prompt:
-    """One IOI prompt. Names, place and object are drawn by a generator seeded per prompt."""
+    """One IOI prompt, or its paired ABC control. Draws are seeded per (template, pattern, seed),
+    and the control's third name is drawn after the shared ones, so both share IO, S1, place and
+    object."""
     check_integer("seed", seed)
     if seed < 0:
         raise ValueError(f"seed must be >= 0, got {seed}")
@@ -175,19 +208,25 @@ def ioi_prompt(
     io, s = (str(n) for n in rng.choice(vocab.names, size=2, replace=False))
     place = str(rng.choice(vocab.places))
     obj = str(rng.choice(vocab.objects))
-    text = fill(template(index, pattern), io=io, s=s, place=place, obj=obj)
+    c = str(rng.choice([n for n in vocab.names if n not in (io, s)])) if control else None
+    text = fill(template(index, pattern), io=io, s=s, place=place, obj=obj, s2=c)
 
     ids = tokenize(text).astype(np.int64)
     io_id = int(tokenize(f" {io}")[1])
     s_id = int(tokenize(f" {s}")[1])
     try:
-        positions = locate(ids, io_id, s_id, " to", token_strings)
+        if c is None:
+            positions = locate(ids, io_id, s_id, " to", token_strings)
+        else:
+            positions = locate_abc(ids, io_id, s_id, int(tokenize(f" {c}")[1]), " to",
+                                   token_strings)
     except ValueError as error:
         raise ValueError(f"IOI prompt {text!r}: {error}") from None
     group = group_id(index, pattern)
+    suite = IOI_ABC_SUITE if control else IOI_SUITE
     return Prompt(
-        id=f"{IOI_SUITE}:{group}:seed{seed}",
-        suite=IOI_SUITE,
+        id=f"{suite}:{group}:seed{seed}",
+        suite=suite,
         repeat_len=0,
         seed=seed,
         token_ids=ids,
@@ -203,8 +242,10 @@ def build_ioi_suite(
     seeds: list[int],
     tokenize: Tokenize,
     token_strings: Callable[[np.ndarray], list[str]],
+    control: bool = False,
 ) -> list[Prompt]:
-    """One experiment's prompts: one template and pattern, one prompt per seed.
+    """One experiment's prompts: one template and pattern, one prompt per seed (or the paired
+    ABC control prompts with `control=True`).
 
     Raises unless every prompt has the same length and the same named positions, because the
     detectors of this suite read one set of positions per experiment.
@@ -214,7 +255,8 @@ def build_ioi_suite(
     if len(set(seeds)) != len(seeds):
         raise ValueError(f"seeds must be distinct, got {seeds}")
     vocab = single_token_vocabulary(tokenize)
-    prompts = [ioi_prompt(index, pattern, seed, tokenize, token_strings, vocab) for seed in seeds]
+    prompts = [ioi_prompt(index, pattern, seed, tokenize, token_strings, vocab, control)
+               for seed in seeds]
     first = prompts[0]
     for p in prompts[1:]:
         if p.token_ids.shape != first.token_ids.shape or p.positions != first.positions:

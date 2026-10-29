@@ -1,6 +1,6 @@
 # Scientific methods
 
-## Current state (M3 step 4)
+## Current state (M3 complete)
 
 Two bundles are committed:
 
@@ -44,13 +44,24 @@ Every observation has status `experimental`. A detector moves to `measured` only
 | S2→S1+1 | L5H5 0.87, L5H8 0.50, L6H9 0.23 (all Induction), L5H0 0.20 (-) |
 
   The paper's heads are prominent, but non-members score high too (L1H11 and L0H5 on S2→S1). This is a concrete reason that attention alone cannot assign roles. Negative Name Movers attend to IO as strongly as Name Movers, and only their output (which is not measured here) tells them apart.
+- Paired control `ioi_abc_v1` (S2 replaced by a third name, everything else equal; ADR 0005 addendum). Mean over the six pairs, IOI → control:
+
+| Detector | Top IOI heads: IOI → control |
+| --- | --- |
+| S2→S1 | L3H0 0.78 → 0.01, L1H11 0.72 → 0.01, L0H5 0.60 → 0.00, L0H1 0.52 → 0.00 |
+| S2→S1+1 | L5H5 0.87 → 0.03, L5H8 0.50 → 0.17, L6H9 0.23 → 0.01 |
+| END→IO | L10H7 0.81 → 0.27, L9H9 0.79 → 0.24, L9H6 0.69 → 0.22, L11H10 0.68 → 0.32 |
+| END→S2 | L8H6 0.82 → 0.51, L7H9 0.52 → 0.37, L8H10 0.42 → 0.28 |
+| END→S1 | small on both (≤ 0.21 → ≤ 0.28) |
+
+  The S2-position patterns depend on the repeated name: they vanish without it. END→IO falls by about two thirds and END→S2 by about a third. These are attention comparisons on one model and these prompts; they say nothing about what the heads write, and they are not a causal test.
 
 ### Known caveats
 
 - X can contain the same token twice (about 2.5% of prompts at L = 50); an ideal induction head may then attend to either match, which slightly lowers its score.
 - Attention assets are float16 (about 3 significant digits) and cover one example prompt per measurement experiment. Scores are computed in float32 and rounded to 6 decimals.
 - These are attention patterns only. Whether a head copies (OV / logit attribution) is not measured yet.
-- IOI scores have no control suite yet (e.g. the paper's pABC prompts with three different names).
+- The IOI control is paired (only S2 changes), not the paper's fully fresh pABC; its numbers are reported, not judged.
 - One stored prompt per experiment is drawn; scores average 8 prompts.
 
 ## Evidence vocabulary

@@ -17,7 +17,7 @@ import numpy as np
 
 from cirqloom_analysis.capture.runner import ExperimentRun, unflatten_heads
 from cirqloom_analysis.models.base import AdapterInfo
-from cirqloom_analysis.prompts.ioi import IOI_SUITE
+from cirqloom_analysis.prompts.ioi import IOI_ABC_SUITE, IOI_SUITE
 from cirqloom_analysis.prompts.repeated import CONTROL_SUITE, REPEATED_SUITE
 from cirqloom_analysis.published.base import PublishedCircuit
 from cirqloom_analysis.schema.bundle import (
@@ -37,13 +37,21 @@ from cirqloom_analysis.schema.validation import head_node_id
 SCORE_DECIMALS = 6
 ATTENTION_PROMPT_INDEX = 0  # which prompt of each experiment gets a stored attention matrix
 
-SUITE_KIND = {REPEATED_SUITE: "measurement", CONTROL_SUITE: "control", IOI_SUITE: "measurement"}
+SUITE_KIND = {
+    REPEATED_SUITE: "measurement",
+    CONTROL_SUITE: "control",
+    IOI_SUITE: "measurement",
+    IOI_ABC_SUITE: "control",
+}
 SUITE_DESCRIPTION = {
     REPEATED_SUITE: "(BOS, X, X): X is {L} random tokens repeated once.",
     CONTROL_SUITE: "(BOS, X, Y): same BOS and X as the repeated suite, then {L} fresh random "
     "tokens. Control: no repetition.",
     IOI_SUITE: "IOI template {group} (Wang et al. 2022, Appendix E), e.g. \"{text}\". Names, "
     "place and object vary per prompt; positions IO, S1, S1+1, S2, END are the same for all.",
+    IOI_ABC_SUITE: "Paired control for IOI template {group}: same IO, S1, place and object as "
+    "the IOI prompt of the same seed, but the S2 slot holds a third name, so no name repeats "
+    "(pABC-style), e.g. \"{text}\". Positions name the same template slots.",
 }
 
 

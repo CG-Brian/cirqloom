@@ -175,6 +175,8 @@ def test_default_registry_has_the_m1_and_ioi_position_detectors():
     suites = {spec.id: spec.prompt_suite for spec in registry}
     assert {s for i, s in suites.items() if not i.startswith("ioi_")} == {"repeated_tokens_v1"}
     assert {s for i, s in suites.items() if i.startswith("ioi_")} == {"ioi_templates_v1"}
+    controls = {spec.control_suites for spec in registry if spec.id.startswith("ioi_")}
+    assert controls == {("ioi_abc_v1",)}
 
 
 def test_default_registry_is_fresh_each_call():

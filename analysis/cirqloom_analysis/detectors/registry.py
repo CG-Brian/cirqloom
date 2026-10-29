@@ -104,6 +104,7 @@ def default_registry() -> DetectorRegistry:
 
 IOI_PAPER = "https://arxiv.org/abs/2211.00593"
 IOI_SUITE = "ioi_templates_v1"
+IOI_ABC_SUITE = "ioi_abc_v1"
 
 
 def _ioi(id_: str, query: str, key: str, description: str) -> DetectorSpec:
@@ -114,6 +115,7 @@ def _ioi(id_: str, query: str, key: str, description: str) -> DetectorSpec:
         method_reference=IOI_PAPER,
         description=description,
         prompt_suite=IOI_SUITE,
+        control_suites=(IOI_ABC_SUITE,),
         build_mask=position_pair_mask,
         position_parameters={"query": query, "key": key},
     )

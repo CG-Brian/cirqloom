@@ -75,6 +75,14 @@ export function boundsOf(points: Vec3[]): Bounds {
   return { min, max, center, radius };
 }
 
+/** Grows a box symmetrically so its half-extent is at least `half` on every axis. */
+export function withMinimumExtent(bounds: Bounds, half: number): Bounds {
+  const c = bounds.center;
+  const min: Vec3 = [0, 1, 2].map((i) => Math.min(bounds.min[i]!, c[i]! - half)) as Vec3;
+  const max: Vec3 = [0, 1, 2].map((i) => Math.max(bounds.max[i]!, c[i]! + half)) as Vec3;
+  return boundsOf([min, max]);
+}
+
 export const CAMERA_FOV = 15;
 
 /** From the target toward the camera: front-right and above, so layer planes read in 3D. */

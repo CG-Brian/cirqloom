@@ -176,6 +176,25 @@
       "tokens_uri": "assets/ioi_templates_v1-BABA-t00.tokens.json"
     },
     {
+      "attention": null,
+      "description": "Paired control for IOI template BABA-t00: same IO, S1, place and object as the IOI prompt of the same seed, but the S2 slot holds a third name, so no name repeats (pABC-style), e.g. \"Then, Andrew and Thomas went to the house. James gave a computer to\". Positions name the same template slots.",
+      "id": "ioi_abc_v1:BABA-t00",
+      "kind": "control",
+      "prompt_suite": "ioi_abc_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 16,
+      "tokens_uri": "assets/ioi_abc_v1-BABA-t00.tokens.json"
+    },
+    {
       "attention": {
         "dtype": "float16",
         "prompt_index": 0,
@@ -203,6 +222,25 @@
       ],
       "sequence_length": 16,
       "tokens_uri": "assets/ioi_templates_v1-ABBA-t00.tokens.json"
+    },
+    {
+      "attention": null,
+      "description": "Paired control for IOI template ABBA-t00: same IO, S1, place and object as the IOI prompt of the same seed, but the S2 slot holds a third name, so no name repeats (pABC-style), e.g. \"Then, Amy and Shannon went to the hospital. Mark gave a kiss to\". Positions name the same template slots.",
+      "id": "ioi_abc_v1:ABBA-t00",
+      "kind": "control",
+      "prompt_suite": "ioi_abc_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 16,
+      "tokens_uri": "assets/ioi_abc_v1-ABBA-t00.tokens.json"
     },
     {
       "attention": {
@@ -234,6 +272,25 @@
       "tokens_uri": "assets/ioi_templates_v1-BABA-t05.tokens.json"
     },
     {
+      "attention": null,
+      "description": "Paired control for IOI template BABA-t05: same IO, S1, place and object as the IOI prompt of the same seed, but the S2 slot holds a third name, so no name repeats (pABC-style), e.g. \"After Kimberly and Stephanie went to the garden, Charles gave a computer to\". Positions name the same template slots.",
+      "id": "ioi_abc_v1:BABA-t05",
+      "kind": "control",
+      "prompt_suite": "ioi_abc_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 15,
+      "tokens_uri": "assets/ioi_abc_v1-BABA-t05.tokens.json"
+    },
+    {
       "attention": {
         "dtype": "float16",
         "prompt_index": 0,
@@ -261,6 +318,25 @@
       ],
       "sequence_length": 15,
       "tokens_uri": "assets/ioi_templates_v1-ABBA-t05.tokens.json"
+    },
+    {
+      "attention": null,
+      "description": "Paired control for IOI template ABBA-t05: same IO, S1, place and object as the IOI prompt of the same seed, but the S2 slot holds a third name, so no name repeats (pABC-style), e.g. \"After Justin and Stephen went to the hospital, Lisa gave a ring to\". Positions name the same template slots.",
+      "id": "ioi_abc_v1:ABBA-t05",
+      "kind": "control",
+      "prompt_suite": "ioi_abc_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 15,
+      "tokens_uri": "assets/ioi_abc_v1-ABBA-t05.tokens.json"
     },
     {
       "attention": {
@@ -292,6 +368,25 @@
       "tokens_uri": "assets/ioi_templates_v1-BABA-t06.tokens.json"
     },
     {
+      "attention": null,
+      "description": "Paired control for IOI template BABA-t06: same IO, S1, place and object as the IOI prompt of the same seed, but the S2 slot holds a third name, so no name repeats (pABC-style), e.g. \"When Cody and Nicholas got a necklace at the school, Jeremy decided to give it to\". Positions name the same template slots.",
+      "id": "ioi_abc_v1:BABA-t06",
+      "kind": "control",
+      "prompt_suite": "ioi_abc_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 18,
+      "tokens_uri": "assets/ioi_abc_v1-BABA-t06.tokens.json"
+    },
+    {
       "attention": {
         "dtype": "float16",
         "prompt_index": 0,
@@ -319,6 +414,25 @@
       ],
       "sequence_length": 18,
       "tokens_uri": "assets/ioi_templates_v1-ABBA-t06.tokens.json"
+    },
+    {
+      "attention": null,
+      "description": "Paired control for IOI template ABBA-t06: same IO, S1, place and object as the IOI prompt of the same seed, but the S2 slot holds a third name, so no name repeats (pABC-style), e.g. \"When Benjamin and Kenneth got a necklace at the garden, Jeremy decided to give it to\". Positions name the same template slots.",
+      "id": "ioi_abc_v1:ABBA-t06",
+      "kind": "control",
+      "prompt_suite": "ioi_abc_v1",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "sequence_length": 18,
+      "tokens_uri": "assets/ioi_abc_v1-ABBA-t06.tokens.json"
     }
   ],
   "graph_uri": "graph.json",
@@ -346,7 +460,7 @@
     },
     "generator": "analysis/scripts/build_gpt2_bundle.py",
     "generator_version": "1",
-    "notes": "Measured here: attention-pattern detectors on repeated random tokens, with a paired non-repeated control, and attention between named positions on IOI prompts built from the paper's templates; every score is 'experimental' (heuristic attention, not causal evidence). Published, not measured here: the IOI circuit of Wang et al. (2022), imported from reviewed annotations. No measured score verifies a published role."
+    "notes": "Measured here: attention-pattern detectors on repeated random tokens, with a paired non-repeated control, and attention between named positions on IOI prompts built from the paper's templates, with a paired control where S2 is a third name. Every score is 'experimental' (heuristic attention, not causal evidence). Published, not measured here: the IOI circuit of Wang et al. (2022), imported from reviewed annotations. No measured score verifies a published role."
   },
   "schema_version": "1.4.0",
   "synthetic_fixture": false

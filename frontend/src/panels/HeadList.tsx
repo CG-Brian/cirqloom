@@ -8,6 +8,7 @@ import type { GraphView, HeadView } from "../features/experiment/graphView";
 import {
   getHeadEvidence,
   getRoleStyle,
+  ORIGIN_LABEL,
   type CircuitOverlay,
 } from "../features/overlays/selectors";
 import { useExplorerStore } from "../features/selection/store";
@@ -41,7 +42,7 @@ function neighbour(view: GraphView, from: HeadView, key: string): HeadView | und
 
 function accessibleName(view: GraphView, node: HeadView): string {
   const roles = getHeadEvidence(view, node.id).memberships.map(
-    (m) => `${m.roleLabel} in ${m.circuit.name}`,
+    (m) => `${m.roleLabel} in ${m.circuit.name} (${ORIGIN_LABEL[m.circuit.origin]})`,
   );
   return roles.length > 0 ? `${node.label}, ${roles.join("; ")}` : node.label;
 }

@@ -172,7 +172,9 @@ export function AttentionHeatmap({ attention, mask, seed, promptCount }: Attenti
     namedAt.set(i, namedAt.has(i) ? `${namedAt.get(i)}/${label}` : label);
   }
   const pct = (i: number) => `${((i + 0.5) / seq) * 100}%`;
-  const maskSummary = mask ? `; outlined: ${mask.cellsQk.length} cells averaged by ${mask.label}` : "";
+  const maskSummary = mask
+    ? `; outlined: ${mask.cellsQk.length} cell${mask.cellsQk.length === 1 ? "" : "s"} averaged by ${mask.label}`
+    : "";
 
   return (
     <div ref={wrapRef} className="w-full" data-testid="attention-heatmap">

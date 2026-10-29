@@ -32,10 +32,11 @@ BUNDLE_ID = "gpt2-small:v2"
 GENERATOR = "analysis/scripts/build_gpt2_bundle.py"
 NOTES = (
     "Measured here: attention-pattern detectors on repeated random tokens, with a paired "
-    "non-repeated control, and attention between named positions on IOI prompts built from the "
-    "paper's templates; every score is 'experimental' (heuristic attention, not causal "
-    "evidence). Published, not measured here: the IOI circuit of Wang et al. (2022), imported "
-    "from reviewed annotations. No measured score verifies a published role."
+    "non-repeated control, and attention between named positions on IOI prompts built from "
+    "the paper's templates, with a paired control where S2 is a third name. Every score is "
+    "'experimental' (heuristic attention, not causal evidence). Published, not measured here: "
+    "the IOI circuit of Wang et al. (2022), imported from reviewed annotations. No measured "
+    "score verifies a published role."
 )
 
 
@@ -74,9 +75,14 @@ def main() -> int:
     # IOI prompts: one experiment per template and pattern (same length and positions inside).
     for index in args.ioi_templates:
         for pattern in ("BABA", "ABBA"):
-            prompts = build_ioi_suite(index, pattern, list(range(args.ioi_seeds)),
-                                      adapter.tokenize, adapter.token_strings)
-            runs.append(run_experiment(adapter, prompts, registry))
+            seeds = list(range(args.ioi_seeds))
+            ioi = run_experiment(adapter, build_ioi_suite(
+                index, pattern, seeds, adapter.tokenize, adapter.token_strings), registry)
+            abc = run_experiment(adapter, build_ioi_suite(
+                index, pattern, seeds, adapter.tokenize, adapter.token_strings, control=True),
+                registry)
+            runs += [ioi, abc]
+            comparisons += compare(ioi, abc, info.n_heads)
 
     environment = {
         "python": platform.python_version(),

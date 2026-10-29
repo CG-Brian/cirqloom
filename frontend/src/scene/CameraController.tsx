@@ -13,13 +13,16 @@ const ARRIVED_EPSILON = 0.01;
 interface Goal {
   position: Vector3;
   target: Vector3;
+  /** A focus leaves the user away from the canonical view; a reset brings them back to it. */
+  kind: "reset" | "focus";
 }
 
 export function CameraController({ bounds }: { bounds: Bounds }) {
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
   const camera = useThree((s) => s.camera);
   const aspect = useThree((s) => (s.size.height > 0 ? s.size.width / s.size.height : 1));
-  const resetNonce = useExplorerStore((s) => s.cameraCommand?.nonce ?? 0);
+  const command = useExplorerStore((s) => s.cameraCommand);
+  const nonce = command?.nonce ?? 0;
   const goal = useRef<Goal | null>(null);
   /** True once the user has moved the camera away from the canonical view. */
   const userMoved = useRef(false);
@@ -39,16 +42,18 @@ export function CameraController({ bounds }: { bounds: Bounds }) {
   }, [camera, pose]);
 
   useEffect(() => {
-    if (resetNonce === 0) {
+    if (command === null) {
       return;
     }
+    const to = command.kind === "focus" ? canonicalCameraPose(command.bounds, aspect) : pose;
     goal.current = {
-      position: new Vector3(...pose.position),
-      target: new Vector3(...pose.target),
+      position: new Vector3(...to.position),
+      target: new Vector3(...to.target),
+      kind: command.kind,
     };
-    // pose is read at the moment of the request; a later resize must not restart the animation.
+    // The pose is read at the moment of the request; a later resize must not restart the animation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resetNonce]);
+  }, [nonce]);
 
   useFrame((_, delta) => {
     const g = goal.current;
@@ -66,9 +71,10 @@ export function CameraController({ bounds }: { bounds: Bounds }) {
     ) {
       camera.position.copy(g.position);
       c.target.copy(g.target);
+      // Back at the canonical view after a reset, so later resizes may refit it again. After a
+      // focus the view is the user's: resizes leave it alone.
+      userMoved.current = g.kind === "focus";
       goal.current = null;
-      // Back at the canonical view, so later resizes may refit it again.
-      userMoved.current = false;
     }
     c.update();
   });

@@ -18,5 +18,11 @@ M3 step 4 runs GPT-2 Small on the IOI task itself, so the published IOI circuit 
 ## Consequences
 
 - 1.3.0 bundles no longer load. Both bundles were regenerated. In the GPT-2 bundle, every repeated-token observation, mask, experiment and asset is unchanged. Six IOI experiments were added: 4,320 observations, 30 masks and 12 asset files. The bundle grows from 5.4 MB to 8.7 MB, mostly from per-prompt scores in `graph.json`.
-- There is no IOI control suite yet (e.g. the paper's pABC with three different names). The IOI scores are not compared with a control.
+- ~~No IOI control suite yet.~~ Added in M3 step 5 (below).
 - Attention on one stored prompt is shown, while scores average 8 prompts. Both are labelled.
+
+## Addendum (M3 step 5): paired ABC control
+
+- Suite `ioi_abc_v1`, one experiment per IOI experiment (`ioi_abc_v1:{pattern}-tNN`, kind `control`, scores only). Each prompt shares its seed, template, IO, S1, place and object with the IOI prompt it pairs with. The S2 slot holds a third name C (drawn after the shared draws), so no name repeats. The positions are identical: they name the same template slots, and in the control S2 is C's position.
+- This differs from the paper's pABC, which draws three fresh names. Keeping IO and S1 makes the comparison paired, like the repeated-token control. All five IOI detectors list `ioi_abc_v1` as their control suite, and the bundle README reports measurement vs control per pair, without a pass/fail rule.
+- The frontend's control hint offers every same-length measurement run (BABA and ABBA share lengths), instead of guessing a single pair from ids.

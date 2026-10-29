@@ -1,11 +1,15 @@
 // Shared UI state (AGENTS.md §10). Holds ids and flags only: no three.js objects, no camera pose,
 // no bundle data. Scene components subscribe with narrow selectors so a hover re-renders 2 nodes.
 import { create } from "zustand";
+import type { Bounds } from "../../scene/layout";
 
 export type ViewMode = "structure" | "functional" | "published-ioi";
 
-/** A one-shot request to the camera controller. `nonce` makes repeated requests distinct. */
-export type CameraCommand = { kind: "reset"; nonce: number };
+/**
+ * A one-shot request to the camera controller. `nonce` makes repeated requests distinct.
+ * "focus" frames the given bounds (a circuit, a relation, a head) from the canonical direction.
+ */
+export type CameraCommand = { kind: "reset"; nonce: number } | { kind: "focus"; bounds: Bounds; nonce: number };
 
 export interface ExplorerState {
   viewMode: ViewMode;
@@ -39,6 +43,7 @@ export interface ExplorerActions {
   /** Clears hover only if `nodeId` is still the hovered node, so a late pointer-out is ignored. */
   unhover(nodeId: string): void;
   resetCamera(): void;
+  focusCamera(bounds: Bounds): void;
 }
 
 export type ExplorerStore = ExplorerState & ExplorerActions;
@@ -78,4 +83,6 @@ export const useExplorerStore = create<ExplorerStore>()((set) => ({
   unhover: (nodeId) => set((s) => (s.hoveredNodeId === nodeId ? { hoveredNodeId: null } : s)),
   resetCamera: () =>
     set((s) => ({ cameraCommand: { kind: "reset", nonce: (s.cameraCommand?.nonce ?? 0) + 1 } })),
+  focusCamera: (bounds) =>
+    set((s) => ({ cameraCommand: { kind: "focus", bounds, nonce: (s.cameraCommand?.nonce ?? 0) + 1 } })),
 }));

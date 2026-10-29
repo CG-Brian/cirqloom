@@ -1,5 +1,6 @@
 // Left panel: circuit overlays, the role legend for the active one, detector overlays, and the
 // keyboard head list. Reads and writes the shared store; holds no selection state of its own.
+import { circuitFocusBounds, type CircuitLayout } from "../features/circuits/circuitLayout";
 import { edgeGroupLabel, EVIDENCE_KIND_LABEL, getEdgeDisplayStyle, type VisualEdgeGroup } from "../features/circuits/edgeGroups";
 import type { GraphView } from "../features/experiment/graphView";
 import { getRoleLegend, type CircuitOverlay } from "../features/overlays/selectors";
@@ -11,6 +12,7 @@ interface CircuitSidebarProps {
   view: GraphView;
   overlay: CircuitOverlay | null;
   edgeGroups: VisualEdgeGroup[];
+  circuitLayout: CircuitLayout | null;
   collapsed: boolean;
   onToggleCollapsed: () => void;
 }
@@ -72,8 +74,9 @@ function RelationList({ view, groups }: { view: GraphView; groups: VisualEdgeGro
   );
 }
 
-export function CircuitSidebar({ view, overlay, edgeGroups, collapsed, onToggleCollapsed }: CircuitSidebarProps) {
+export function CircuitSidebar({ view, overlay, edgeGroups, circuitLayout, collapsed, onToggleCollapsed }: CircuitSidebarProps) {
   const activeCircuitId = useExplorerStore((s) => s.activeCircuitId);
+  const focusCamera = useExplorerStore((s) => s.focusCamera);
   const toggleCircuit = useExplorerStore((s) => s.toggleCircuit);
 
   if (collapsed) {
@@ -145,6 +148,15 @@ export function CircuitSidebar({ view, overlay, edgeGroups, collapsed, onToggleC
 
           {overlay && (
             <div className="mt-3">
+              {circuitLayout && (
+                <button
+                  type="button"
+                  onClick={() => focusCamera(circuitFocusBounds(view, circuitLayout))}
+                  className="mb-2 w-full rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-200 hover:border-slate-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400"
+                >
+                  Focus camera on {overlay.circuit.name}
+                </button>
+              )}
               <h4 className="mb-1.5 text-[10px] font-medium text-slate-500 uppercase">
                 Roles in {overlay.circuit.name}
               </h4>

@@ -75,6 +75,7 @@ function Explorer({ manifest, view }: { manifest: Manifest; view: GraphView }) {
             view={view}
             overlay={overlay}
             edgeGroups={edgeGroups}
+            circuitLayout={circuitLayout}
             collapsed={sidebarCollapsed}
             onToggleCollapsed={() => setSidebarCollapsed((c) => !c)}
           />
@@ -86,6 +87,7 @@ function Explorer({ manifest, view }: { manifest: Manifest; view: GraphView }) {
             manifest={manifest}
             experiment={experiment}
             edgeGroups={edgeGroups}
+            circuitLayout={circuitLayout}
             collapsed={inspectorCollapsed}
             onToggleCollapsed={() => setInspectorCollapsed((c) => !c)}
           />

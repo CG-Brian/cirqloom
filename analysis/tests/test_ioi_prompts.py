@@ -10,12 +10,14 @@ import numpy as np
 import pytest
 from fake_adapter import BOS, INDUCTION_HEAD, INFO, PREVIOUS_TOKEN_HEAD, ContentAwareAdapter
 
+from cirqloom_analysis.capture.controls import compare
 from cirqloom_analysis.capture.runner import run_experiment, unflatten_heads
 from cirqloom_analysis.detectors.registry import default_registry
 from cirqloom_analysis.export.bundle_writer import read_bundle, validate_bundle_files, write_bundle
 from cirqloom_analysis.export.measured import build_measured_bundle
 from cirqloom_analysis.prompts.ioi import (
     BABA_TEMPLATES,
+    IOI_ABC_SUITE,
     IOI_SUITE,
     abba,
     build_ioi_suite,
@@ -213,3 +215,50 @@ def test_file_validation_rejects_positions_that_differ_or_overflow(ioi_run, tmp_
         validate_bundle_files(tmp_path, manifest)
     problems = " ".join(info.value.problems)
     assert "positions out of range" in problems and "do not share the same positions" in problems
+
+
+# --- Paired ABC control ---------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("pattern", ["BABA", "ABBA"])
+@pytest.mark.parametrize("index", range(15))
+def test_abc_control_pairs_with_the_ioi_prompt_except_the_s2_name(tok, index, pattern):
+    seeds = [0, 1, 2]
+    ioi = build_ioi_suite(index, pattern, seeds, tok.tokenize, tok.token_strings)
+    abc = build_ioi_suite(index, pattern, seeds, tok.tokenize, tok.token_strings, control=True)
+    for m, c in zip(ioi, abc, strict=True):
+        assert c.suite == IOI_ABC_SUITE
+        assert c.id == f"{IOI_ABC_SUITE}:{pattern}-t{index:02d}:seed{m.seed}"
+        assert c.positions == m.positions and c.token_ids.shape == m.token_ids.shape
+        ms, cs = tok.token_strings(m.token_ids), tok.token_strings(c.token_ids)
+        pos = c.positions
+        # Same tokens everywhere except the S2 slot, which now holds a third name.
+        diff = [i for i, (a, b) in enumerate(zip(ms, cs, strict=True)) if a != b]
+        assert diff == [pos["S2"]]
+        assert cs[pos["S2"]] not in (cs[pos["IO"]], cs[pos["S1"]])
+        assert cs.count(cs[pos["S1"]]) == 1  # no name repeats in the control
+
+
+def test_abc_control_drops_the_fake_induction_heads_s2_score(tok):
+    seeds = [0, 1, 2, 3]
+    registry = default_registry()
+    ioi = run_experiment(ContentAwareAdapter(), build_ioi_suite(
+        0, "BABA", seeds, tok.tokenize, tok.token_strings), registry)
+    abc = run_experiment(ContentAwareAdapter(), build_ioi_suite(
+        0, "BABA", seeds, tok.tokenize, tok.token_strings, control=True), registry)
+    assert abc.experiment_id == "ioi_abc_v1:BABA-t00"
+    assert sorted(abc.results) == sorted(ioi.results)  # every IOI detector accepts its control
+    induction = lambda run: unflatten_heads(  # noqa: E731
+        run.results["ioi_s2_to_s1plus1_attention"].summary.mean, INFO.n_layers, INFO.n_heads
+    )[INDUCTION_HEAD]
+    assert induction(ioi) == 1.0
+    assert induction(abc) == 0.0  # no earlier occurrence of the S2 name: attends to BOS
+    comparison = compare(ioi, abc, INFO.n_heads)
+    assert {c.control_id for c in comparison} == {"ioi_abc_v1:BABA-t00"}
+    manifest, graph, _ = build_measured_bundle([ioi, abc], INFO, tok.token_strings,
+                                               bundle_id="toy:ioi:v1", generator="test",
+                                               environment={}, notes="test")
+    validate_bundle(manifest, graph)
+    kinds = {e.id: (e.kind, e.attention is not None) for e in manifest.experiments}
+    assert kinds == {"ioi_templates_v1:BABA-t00": ("measurement", True),
+                     "ioi_abc_v1:BABA-t00": ("control", False)}

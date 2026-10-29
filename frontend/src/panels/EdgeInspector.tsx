@@ -11,10 +11,11 @@ import {
   senderRoles,
   type VisualEdgeGroup,
 } from "../features/circuits/edgeGroups";
+import { relationFocusBounds, type CircuitLayout } from "../features/circuits/circuitLayout";
 import type { GraphView } from "../features/experiment/graphView";
 import { useExplorerStore } from "../features/selection/store";
 import { AttentionAlignment } from "./AttentionAlignment";
-import { CollapseButton, EvidenceBadge, OriginBadge, PanelSection } from "./ui";
+import { CollapseButton, EvidenceBadge, HeaderButton, OriginBadge, PanelSection } from "./ui";
 
 interface EdgeInspectorProps {
   provider: DataProvider;
@@ -23,6 +24,8 @@ interface EdgeInspectorProps {
   /** Observed attention is shown for this experiment's stored prompt. */
   experiment: Experiment | null;
   group: VisualEdgeGroup;
+  /** Where the relation is drawn, for "Focus"; null when no circuit is shown. */
+  circuitLayout: CircuitLayout | null;
   collapsed: boolean;
   onToggleCollapsed: () => void;
 }
@@ -76,9 +79,11 @@ export function EdgeInspector({
   manifest,
   experiment,
   group,
+  circuitLayout,
   collapsed,
   onToggleCollapsed,
 }: EdgeInspectorProps) {
+  const focusCamera = useExplorerStore((s) => s.focusCamera);
   const selectEdgeGroup = useExplorerStore((s) => s.selectEdgeGroup);
   const select = useExplorerStore((s) => s.select);
   const circuit = view.circuitById.get(group.circuitId);
@@ -109,13 +114,16 @@ export function EdgeInspector({
         <PanelSection
           title="Relation"
           aside={
-            <button
-              type="button"
-              onClick={() => selectEdgeGroup(null)}
-              className="rounded px-1.5 text-[11px] text-slate-400 hover:bg-slate-800 hover:text-slate-100"
-            >
-              Clear
-            </button>
+            <span className="flex gap-1">
+              {circuitLayout && (
+                <HeaderButton
+                  label="Focus"
+                  ariaLabel="Focus the camera on this relation"
+                  onClick={() => focusCamera(relationFocusBounds(view, circuitLayout, group))}
+                />
+              )}
+              <HeaderButton label="Clear" onClick={() => selectEdgeGroup(null)} />
+            </span>
           }
         >
           <p className="text-sm text-slate-50">{edgeGroupLabel(view, group)}</p>

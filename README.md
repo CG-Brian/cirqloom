@@ -2,7 +2,7 @@
 
 An evidence-aware, interactive 3D atlas of attention heads and circuits in pretrained transformers, starting with GPT-2 Small.
 
-> **Status: M3 in progress (circuit-centric roadmap: IOI → Induction → Copy Suppression).** The verified IOI circuit (26 heads, 7 roles, 27 sourced relations) is drawn as a 3D circuit graph, and GPT-2's attention on the paper's IOI prompts is measured alongside it (position-labelled heatmaps, aligned attention per relation). All measured scores are attention patterns, labelled experimental. The app opens a **measured GPT-2 Small bundle** by default: previous-token, first-token (BOS) and induction attention scores on repeated random tokens, with a paired non-repeated control. Every score is labelled `experimental`: it is a heuristic attention measurement, not causal evidence. No published circuits (IOI) are included yet. The synthetic demo fixture is still available at `?bundle=fixture`.
+> **Status: M3 complete; M4 (Induction circuit) is next.** The app opens the GPT-2 Small bundle: the published IOI circuit of Wang et al. (2022) drawn as a 3D circuit graph (26 heads, 7 roles, 27 sourced relations), and GPT-2's own attention measured on repeated random tokens and on the paper's IOI prompts, each with a paired control. Published claims are labelled with their source; every measured score is an attention pattern labelled `experimental`, not causal evidence and not a verification of any published role. The synthetic demo fixture is at `?bundle=fixture`.
 
 ## What works today
 
@@ -15,6 +15,7 @@ An evidence-aware, interactive 3D atlas of attention heads and circuits in pretr
 - A Python pipeline: GPT-2 adapter on TransformerLens `TransformerBridge` (pinned revision), deterministic prompt suites, numpy detectors, and a bundle exporter with lazily loaded float16 attention assets.
 - The published IOI circuit (Wang et al., 2022) as a 3D circuit graph: 7 role-group hubs above the layers, 8 evidence-typed ribbons bundling its 27 sourced records (stored at the paper's granularity: head → role group, one group → group, head → logits), Q/K/V channel labels, and a Relation inspector listing every record with its figure. The head inspector separates the paper's roles from our repeated-token scores.
 - IOI prompt experiments built from the paper's templates, with IO / S1 / S1+1 / S2 / END positions checked against the tokenizer: position-labelled heatmaps, five END/S2 attention observations per head, and an "observed attention" table in the relation inspector that lines up a relation's heads at their positions (observations only, not information flow).
+- A paired IOI control (the S2 name replaced by a third name) reported against every IOI experiment, and camera focus on a circuit, a relation or a head.
 - A versioned bundle schema, defined in Python (Pydantic) and TypeScript (zod), with a cross-language contract test.
 
 ## Quickstart: frontend with the committed bundles

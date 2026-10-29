@@ -6,10 +6,10 @@ import { PerspectiveCamera, Vector3 } from "three";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { GraphSchema, ManifestSchema } from "../src/data/schema";
-import { getCircuitLayout } from "../src/features/circuits/circuitLayout";
+import { getCircuitLayout, relationFocusBounds } from "../src/features/circuits/circuitLayout";
 import { getVisualEdgeGroups } from "../src/features/circuits/edgeGroups";
 import { buildGraphView } from "../src/features/experiment/graphView";
-import { CAMERA_FOV, canonicalCameraPose, headPosition, sceneBounds, type Vec3 } from "../src/scene/layout";
+import { CAMERA_FOV, canonicalCameraPose, headPosition, sceneBounds, type Bounds, type Vec3 } from "../src/scene/layout";
 
 // The fixture's shape (GPT-2 Small).
 const LAYERS = 12;
@@ -313,5 +313,89 @@ test("measured bundle: IOI prompt heatmap labels positions and relations show al
   const table = relation.getByTestId("attention-alignment").getByRole("table");
   await expect(table.getByRole("row")).toHaveCount(8);
   await expect(relation.getByTestId("attention-alignment")).toContainText("does not show information passing");
+  expect(errors).toEqual([]);
+});
+
+
+/** Screen point of a world position when the camera frames `bounds` canonically. */
+function projectWith(bounds: Bounds, world: Vec3, box: { x: number; y: number; width: number; height: number }) {
+  const aspect = box.width / box.height;
+  const pose = canonicalCameraPose(bounds, aspect);
+  const camera = new PerspectiveCamera(CAMERA_FOV, aspect, 0.1, 500);
+  camera.position.set(...pose.position);
+  camera.lookAt(...pose.target);
+  camera.updateMatrixWorld();
+  const ndc = new Vector3(...world).project(camera);
+  return { x: box.x + ((ndc.x + 1) / 2) * box.width, y: box.y + ((1 - ndc.y) / 2) * box.height };
+}
+
+test("measured bundle: circuit → relation → focus → head → IOI heatmap, evidence labelled at every step", async ({ page }) => {
+  // A long flow with WebGL animation: under parallel load single steps can exceed 5 s.
+  test.setTimeout(90_000);
+  test.slow();
+  const errors = trackErrors(page);
+  await page.goto("/");
+  const sidebar = page.getByRole("complementary", { name: "Circuits and heads" });
+
+  // 1. Circuit: published, and the status bar says so.
+  const card = sidebar.getByRole("button", { name: /^Indirect Object Identification \(IOI\)/ });
+  await expect(card).toContainText("Published annotation");
+  await card.click();
+  await expect(page.getByRole("contentinfo")).toContainText("Indirect Object Identification (IOI) (published annotation)");
+  await sidebar.getByRole("button", { name: "Focus camera on Indirect Object Identification (IOI)" }).click();
+
+  // 2. Relation: a published experiment with its locator.
+  await sidebar.getByRole("list", { name: "Circuit relations" })
+    .getByRole("button", { name: /^S-Inhibition heads → Name Mover queries/ }).click();
+  const relation = page.getByRole("complementary", { name: "Relation inspector" });
+  await expect(relation.getByText("Published experiment")).toBeVisible();
+  await expect(relation.getByText(/Where: §3\.2, Figure 4b/)).toBeVisible();
+
+  // 3. Focus the relation, then click a sender head where the focused camera puts it.
+  await relation.getByRole("button", { name: "Focus the camera on this relation" }).click();
+  const view = loadGpt2View();
+  const ioi = "circuit:gpt2-small:ioi:wang-2022";
+  const groups = getVisualEdgeGroups(view, ioi);
+  const group = groups.find((g) => g.locator?.includes("Figure 4b"))!;
+  const bounds = relationFocusBounds(view, getCircuitLayout(view, ioi, groups), group);
+  const target = view.nodeById.get("model:gpt2-small:head:L8H6")!.position;
+  const canvas = page.getByTestId("model-scene").locator("canvas");
+  const inspector = page.getByRole("complementary", { name: "Head inspector" });
+  await expect(async () => {
+    const box = (await canvas.boundingBox())!;
+    const point = projectWith(bounds, target, box);
+    await page.mouse.click(point.x, point.y);
+    await expect(inspector.getByText("model:gpt2-small:head:L8H6")).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
+
+  // 4. Head: the paper's role, labelled as published.
+  const membership = inspector.locator("section", { has: page.getByRole("heading", { name: "Circuit membership" }) });
+  await expect(membership.getByText("S-Inhibition", { exact: true })).toBeVisible();
+  await expect(membership.getByText("Published annotation")).toBeVisible();
+
+  // 5. IOI heatmap: measured, experimental, positions named, the paper's role not "verified".
+  await page.getByLabel("Experiment").selectOption("ioi_templates_v1:BABA-t00");
+  await expect(inspector.getByTestId("published-vs-measured")).toContainText("do not test this head's published role");
+  await inspector.getByRole("button", { name: /cells averaged by ioi_end_to_s2_attention/ }).click();
+  const tokens = JSON.parse(readFileSync(path.resolve(process.cwd(), "../data/bundles/gpt2-small/assets/ioi_templates_v1-BABA-t00.tokens.json"), "utf8"));
+  const { S2, END } = tokens.prompts[0].positions as { S2: number; END: number };
+  const seq = (tokens.prompts[0].token_ids as number[]).length;
+  const map = inspector.getByRole("img", { name: /outlined: 1 cell averaged by ioi_end_to_s2_attention/ });
+  const readout = inspector.getByTestId("heatmap-readout");
+  // Re-measure on every attempt: the map can resize while the panel settles.
+  await expect(async () => {
+    await map.scrollIntoViewIfNeeded();
+    const mbox = (await map.boundingBox())!;
+    const cell = mbox.width / seq;
+    await page.mouse.move(mbox.x + (S2 + 0.5) * cell, mbox.y + (END + 0.5) * cell);
+    await expect(readout).toContainText(`q ${END} END`, { timeout: 1_000 });
+    await expect(readout).toContainText(`k ${S2} S2`, { timeout: 1_000 });
+  }).toPass({ timeout: 15_000 });
+  await expect(readout).toContainText("in mask");
+
+  // 6. Its paired control keeps scores only and points back to the measurement runs.
+  await page.getByLabel("Experiment").selectOption("ioi_abc_v1:BABA-t00");
+  await expect(inspector.getByText(/Control run/)).toBeVisible();
+  await expect(inspector.getByRole("button", { name: "Show ioi_templates_v1:BABA-t00" })).toBeVisible();
   expect(errors).toEqual([]);
 });

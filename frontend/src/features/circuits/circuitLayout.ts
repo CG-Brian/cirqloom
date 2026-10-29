@@ -8,7 +8,16 @@
 //   visible without inventing head-to-head lines.
 // - The special `logits` endpoint sits after the last layer.
 import type { Endpoint } from "../../data/schema";
-import { CIRCUIT_BAND_HEADROOM, circuitBandY, layerX, LAYER_SPACING, type Vec3 } from "../../scene/layout";
+import {
+  boundsOf,
+  CIRCUIT_BAND_HEADROOM,
+  circuitBandY,
+  layerX,
+  LAYER_SPACING,
+  withMinimumExtent,
+  type Bounds,
+  type Vec3,
+} from "../../scene/layout";
 import type { GraphView } from "../experiment/graphView";
 import { getRoleStyle, type RoleStyle } from "../overlays/selectors";
 import { edgeGroupHeads, roleMembers, type VisualEdgeGroup } from "./edgeGroups";
@@ -197,3 +206,41 @@ export function groupAnchorKeys(layout: CircuitLayout, groupId: string): Set<str
   return new Set(geometry ? [geometry.from, geometry.to] : []);
 }
 
+
+/** Smallest framed half-extent, so focusing one head or a short relation is not too close. */
+const FOCUS_MIN_HALF_EXTENT = 1.2;
+
+function focusBounds(view: GraphView, points: Vec3[], nodeIds: Iterable<string>): Bounds {
+  const heads = [...nodeIds].flatMap((id) => {
+    const node = view.nodeById.get(id);
+    return node ? [node.position] : [];
+  });
+  return withMinimumExtent(boundsOf([...points, ...heads]), FOCUS_MIN_HALF_EXTENT);
+}
+
+/** Everything the circuit draws: its hubs, anchors, the logits endpoint and every member head. */
+export function circuitFocusBounds(view: GraphView, layout: CircuitLayout): Bounds {
+  const anchors = [...layout.anchors.values()];
+  return focusBounds(
+    view,
+    [...anchors.map((a) => a.position), ...layout.edges.flatMap((e) => e.points)],
+    anchors.flatMap((a) => a.nodeIds),
+  );
+}
+
+/** One relation: its curve, its two anchors and the heads its evidence is about. */
+export function relationFocusBounds(view: GraphView, layout: CircuitLayout, group: VisualEdgeGroup): Bounds {
+  const geometry = layout.edges.find((e) => e.groupId === group.id);
+  const ends = geometry ? [layout.anchors.get(geometry.from), layout.anchors.get(geometry.to)] : [];
+  const { senders, receivers } = edgeGroupHeads(view, group);
+  return focusBounds(
+    view,
+    [...(geometry?.points ?? []), ...ends.flatMap((a) => (a ? [a.position] : []))],
+    [...senders, ...receivers],
+  );
+}
+
+/** One head, with room around it. */
+export function headFocusBounds(view: GraphView, nodeId: string): Bounds {
+  return focusBounds(view, [], [nodeId]);
+}

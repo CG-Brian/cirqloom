@@ -27,9 +27,9 @@ describe("HeadList", () => {
     expect(screen.getAllByRole("group", { name: /^Layer \d+$/ })).toHaveLength(12);
   });
 
-  it("names circuit roles in the accessible label", () => {
+  it("names circuit roles and where they come from in the accessible label", () => {
     render(<Harness />);
-    expect(head("L3H3")).toHaveAccessibleName("L3H3, Fixture role B in Demo fixture circuit");
+    expect(head("L3H3")).toHaveAccessibleName("L3H3, Fixture role B in Demo fixture circuit (synthetic fixture)");
     expect(head("L3H4")).toHaveAccessibleName("L3H4");
   });
 

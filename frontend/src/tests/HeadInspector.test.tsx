@@ -450,3 +450,28 @@ describe("Observed attention alignment on IOI prompts", () => {
     expect(useExplorerStore.getState().experimentId).toBe("ioi_templates_v1:BABA-t00");
   });
 });
+
+describe("published vs measured labels on the GPT-2 bundle", () => {
+  const measured = loadMeasured();
+
+  it("say where a role comes from in the head list label", async () => {
+    const { HeadList } = await import("../panels/HeadList");
+    render(<HeadList view={measured.view} overlay={null} />);
+    expect(screen.getByRole("button", { name: /^L9H9,/ })).toHaveAccessibleName(
+      "L9H9, Name Mover in Indirect Object Identification (IOI) (published annotation)",
+    );
+  });
+
+  it("describe every IOI position detector as attention that does not test the role", () => {
+    const ioi = measured.graph.observations.filter((o) => o.detector_id.startsWith("ioi_"));
+    expect(ioi.length).toBeGreaterThan(0);
+    expect(new Set(ioi.map((o) => o.status))).toEqual(new Set(["experimental"]));
+    expect(new Set(ioi.map((o) => o.evidence_type))).toEqual(new Set(["heuristic_attention"]));
+  });
+
+  it("never mark a measured record as published, or a published one as measured", () => {
+    expect(measured.graph.observations.every((o) => o.status !== "published")).toBe(true);
+    expect(measured.graph.memberships.every((m) => m.evidence_status === "published")).toBe(true);
+    expect(measured.graph.edges.every((e) => e.evidence_status === "published" && e.magnitude === null)).toBe(true);
+  });
+});

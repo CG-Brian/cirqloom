@@ -82,7 +82,9 @@ describe("bundle contract shared with Python", () => {
       const tokens = TokensFileSchema.parse(loadJson(experiment.tokens_uri, MEASURED_DIR));
       const positions = tokens.prompts.map((p) => JSON.stringify(p.positions ?? null));
       expect(new Set(positions).size).toBe(1);
-      expect(positions[0] !== "null").toBe(experiment.prompt_suite === "ioi_templates_v1");
+      expect(positions[0] !== "null").toBe(["ioi_templates_v1", "ioi_abc_v1"].includes(experiment.prompt_suite));
+      // Controls keep scores only; measurements store one prompt of attention.
+      expect(experiment.attention !== null).toBe(experiment.kind === "measurement");
     }
     // Every observation is labelled experimental: nothing in the bundle claims more.
     expect(new Set(graph.observations.map((o) => o.status))).toEqual(new Set(["experimental"]));

@@ -4,6 +4,7 @@
 import type { DataProvider } from "../data/DataProvider";
 import type { Experiment, Manifest, Observation } from "../data/schema";
 import { getDetectorMask } from "../features/attention/heatmapModel";
+import { headFocusBounds, type CircuitLayout } from "../features/circuits/circuitLayout";
 import { edgeGroupLabel, edgeGroupsForHead, type VisualEdgeGroup } from "../features/circuits/edgeGroups";
 import { observationsForExperiment } from "../features/experiment/activeExperiment";
 import type { GraphView } from "../features/experiment/graphView";
@@ -15,6 +16,7 @@ import {
   CollapseButton,
   EmptyNote,
   EvidenceBadge,
+  HeaderButton,
   OriginBadge,
   PanelSection,
   RoleMarker,
@@ -28,6 +30,8 @@ interface HeadInspectorProps {
   experiment: Experiment | null;
   /** The active circuit's relations; a selected one replaces the head view. */
   edgeGroups: VisualEdgeGroup[];
+  /** Where the active circuit is drawn (for relation focus); null when none is shown. */
+  circuitLayout?: CircuitLayout | null;
   collapsed: boolean;
   onToggleCollapsed: () => void;
 }
@@ -132,9 +136,11 @@ export function HeadInspector({
   manifest,
   experiment,
   edgeGroups,
+  circuitLayout = null,
   collapsed,
   onToggleCollapsed,
 }: HeadInspectorProps) {
+  const focusCamera = useExplorerStore((s) => s.focusCamera);
   const selectedNodeId = useExplorerStore((s) => s.selectedNodeId);
   const selectedEdgeGroupId = useExplorerStore((s) => s.selectedEdgeGroupId);
   const select = useExplorerStore((s) => s.select);
@@ -148,6 +154,7 @@ export function HeadInspector({
         manifest={manifest}
         experiment={experiment}
         group={selectedGroup}
+        circuitLayout={circuitLayout}
         collapsed={collapsed}
         onToggleCollapsed={onToggleCollapsed}
       />
@@ -200,13 +207,14 @@ export function HeadInspector({
             <PanelSection
               title="Identity"
               aside={
-                <button
-                  type="button"
-                  onClick={() => select(null)}
-                  className="rounded px-1.5 text-[11px] text-slate-400 hover:bg-slate-800 hover:text-slate-100"
-                >
-                  Clear
-                </button>
+                <span className="flex gap-1">
+                  <HeaderButton
+                    label="Focus"
+                    ariaLabel="Focus the camera on this head"
+                    onClick={() => focusCamera(headFocusBounds(view, node.id))}
+                  />
+                  <HeaderButton label="Clear" onClick={() => select(null)} />
+                </span>
               }
             >
               <p className="font-mono text-lg text-slate-50">{node.label}</p>
@@ -300,8 +308,9 @@ export function HeadInspector({
                   <div className="text-slate-500">{experiment.description}</div>
                   {experiment.kind === "control" && (
                     <div className="mt-1 rounded bg-slate-800/80 px-2 py-1 text-slate-300">
-                      Control run: no repetition. Compare with the repeated run; a content-dependent
-                      head should score low here, a positional head should not change.
+                      Control run: the input feature the measurement depends on is removed (see the
+                      description). Compare with its measurement run: a head whose score depends on
+                      that feature should score lower here; a purely positional head should not change.
                     </div>
                   )}
                 </div>

@@ -83,6 +83,20 @@ export function RoleMarker({ style }: { style: RoleStyle }) {
   );
 }
 
+/** Small text button for a section header (Focus, Clear). */
+export function HeaderButton({ label, onClick, ariaLabel }: { label: string; onClick: () => void; ariaLabel?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      className="rounded px-1.5 text-[11px] text-slate-400 hover:bg-slate-800 hover:text-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400"
+    >
+      {label}
+    </button>
+  );
+}
+
 export function PanelSection({
   title,
   children,

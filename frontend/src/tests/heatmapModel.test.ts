@@ -9,7 +9,7 @@ import {
   getDetectorMask,
   heatmapPixels,
   maskCellSet,
-  measurementFor,
+  measurementsFor,
   namedPositions,
   positionLabelsAt,
   readCell,
@@ -38,7 +38,7 @@ describe("getDetectorMask", () => {
   });
 });
 
-describe("measurementFor", () => {
+describe("measurementsFor", () => {
   const exp = (id: string, kind: Experiment["kind"], seq: number): Experiment => ({
     id,
     prompt_suite: "t",
@@ -53,8 +53,8 @@ describe("measurementFor", () => {
   const manifest = { experiments } as unknown as Manifest;
 
   it("suggests the measurement run of the same length, or nothing", () => {
-    expect(measurementFor(manifest, experiments[1]!)?.id).toBe("m21");
-    expect(measurementFor(manifest, experiments[2]!)).toBeNull();
+    expect(measurementsFor(manifest, experiments[1]!).map((e) => e.id)).toEqual(["m21"]);
+    expect(measurementsFor(manifest, experiments[2]!)).toEqual([]);
   });
 });
 

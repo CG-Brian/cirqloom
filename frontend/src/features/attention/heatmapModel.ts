@@ -15,12 +15,13 @@ export function getDetectorMask(
   return masks.find((m) => m.experiment_id === experimentId && m.detector_id === detectorId) ?? null;
 }
 
-/** A measurement experiment with the same sequence length, to suggest from a control run. */
-export function measurementFor(manifest: Manifest, experiment: Experiment): Experiment | null {
-  return (
-    manifest.experiments.find(
-      (e) => e.kind === "measurement" && e.attention !== null && e.sequence_length === experiment.sequence_length,
-    ) ?? null
+/**
+ * Measurement experiments with stored attention and the same sequence length, to suggest from
+ * a control run. Several can match (e.g. IOI BABA and ABBA share lengths); all are offered.
+ */
+export function measurementsFor(manifest: Manifest, experiment: Experiment): Experiment[] {
+  return manifest.experiments.filter(
+    (e) => e.kind === "measurement" && e.attention !== null && e.sequence_length === experiment.sequence_length,
   );
 }
 

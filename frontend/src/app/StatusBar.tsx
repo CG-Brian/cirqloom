@@ -1,5 +1,5 @@
 import type { Manifest } from "../data/schema";
-import type { CircuitOverlay } from "../features/overlays/selectors";
+import { ORIGIN_LABEL, type CircuitOverlay } from "../features/overlays/selectors";
 
 interface StatusBarProps {
   manifest: Manifest;
@@ -21,7 +21,10 @@ export function StatusBar({ manifest, overlay }: StatusBarProps) {
         </span>
       )}
       <span>
-        Overlay: <span className="text-slate-200">{overlay ? overlay.circuit.name : "none"}</span>
+        Overlay:{" "}
+        <span className="text-slate-200">
+          {overlay ? `${overlay.circuit.name} (${ORIGIN_LABEL[overlay.circuit.origin]})` : "none"}
+        </span>
       </span>
       <span className="flex items-center gap-1.5">
         <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
