@@ -1,4 +1,4 @@
-"""Build a measured bundle from captured experiment runs (M1 Phase 3, AGENTS.md §8).
+"""Build a measured bundle from captured experiment runs (M1 Phase 3, docs/spec.md §8).
 
 Pure: takes runs and model info, returns (manifest, graph, assets). Nothing here touches torch,
 so it is tested with a fake adapter.

@@ -1,4 +1,4 @@
-// Observed attention alignment for one circuit relation (AGENTS.md §2, §9).
+// Observed attention alignment for one circuit relation (docs/spec.md §2, §9).
 //
 // On one prompt with named positions (IOI: IO, S1, S1+1, S2, END), each head of a relation gets
 // one row: its attention from the query position the relation names for its side (the sender's

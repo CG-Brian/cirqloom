@@ -1,4 +1,4 @@
-"""Previous-token attention mask (checkpoint 3, AGENTS.md §7.2).
+"""Previous-token attention mask (checkpoint 3, docs/spec.md §7.2).
 
 A previous-token head puts its attention on source k = q - 1. This is a positional
 attention pattern score, not causal proof.

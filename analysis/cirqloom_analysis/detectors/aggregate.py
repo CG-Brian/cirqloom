@@ -1,4 +1,4 @@
-"""Aggregate per-example detector scores into per-head summaries (checkpoint 6, AGENTS.md §7.1-7).
+"""Aggregate per-example detector scores into per-head summaries (docs/spec.md §7.1-7).
 
 Unit of analysis = one example (prompt). The cells inside one example (its `support`) are
 not independent: the same head reads the same sequence, so an easy sequence lifts all of
@@ -10,7 +10,7 @@ evidence look stronger than it is. So:
     weight per example; each example's support is kept alongside.
 
 Only pool scores from the same detector and prompt suite: scores from different detectors or
-suites are not on a comparable scale (AGENTS.md §5). That is the caller's (and the detector
+suites are not on a comparable scale (docs/spec.md §5). That is the caller's (and the detector
 spec's) responsibility; MaskedScore does not carry a detector id.
 """
 
@@ -32,13 +32,13 @@ class HeadSummary:
     std: np.ndarray | None
     """Shape [head]: sample standard deviation (ddof=1) over examples.
     None when n < 2: the spread of a single example is undefined, and NaN must never reach
-    a bundle (AGENTS.md §12). 0.0 would wrongly claim the score is perfectly consistent."""
+    a bundle (docs/spec.md §12). 0.0 would wrongly claim the score is perfectly consistent."""
 
     n: int
     """Number of examples (prompts). Not the number of mask cells."""
 
     per_example: np.ndarray
-    """Shape [n, head]: every example's score, kept for inspection (AGENTS.md §7.1-7)."""
+    """Shape [n, head]: every example's score, kept for inspection (docs/spec.md §7.1-7)."""
 
     support: np.ndarray
     """Shape [n]: how many mask cells each example's score averages over."""

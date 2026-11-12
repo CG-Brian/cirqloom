@@ -1,4 +1,4 @@
-// Browser smoke tests (AGENTS.md §12): the real app, real WebGL canvas, real bundles.
+// Browser smoke tests (docs/spec.md §12): the real app, real WebGL canvas, real bundles.
 // Most tests use the synthetic fixture (?bundle=fixture) for its demo circuit; the last one
 // opens the default measured GPT-2 bundle.
 import { expect, test, type Page } from "@playwright/test";
@@ -32,7 +32,7 @@ const headButton = (page: Page, label: string) =>
 
 test.beforeEach(async ({ page }, testInfo) => {
   if (!testInfo.title.startsWith("measured bundle")) {
-    await page.goto("/?bundle=fixture");
+    await page.goto("./?bundle=fixture");
   }
 });
 
@@ -133,7 +133,7 @@ test("reset view and panel collapse run without console errors", async ({ page }
 
 test("measured bundle: real scores per experiment, control labelled, no fixture warning", async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto("/");
+  await page.goto("./");
   await expect(page.getByRole("status")).toContainText("Measured on openai-community/gpt2");
   await expect(page.getByText("Demo fixture — not measured model data.")).toHaveCount(0);
 
@@ -153,7 +153,7 @@ test("measured bundle: real scores per experiment, control labelled, no fixture 
 
 test("measured bundle: heatmap draws real attention and outlines the exported mask", async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto("/");
+  await page.goto("./");
   const inspector = page.getByRole("complementary", { name: "Head inspector" });
   await headButton(page, "L5H5").click();
 
@@ -190,7 +190,7 @@ test("measured bundle: heatmap draws real attention and outlines the exported ma
 
 test("measured bundle: the published IOI circuit overlays its 26 heads in 7 roles", async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto("/");
+  await page.goto("./");
   const sidebar = page.getByRole("complementary", { name: "Circuits and heads" });
   const ioi = sidebar.getByRole("button", { name: /^Indirect Object Identification \(IOI\)/ });
   await expect(ioi).toContainText("26 heads");
@@ -231,7 +231,7 @@ function screenPoint(world: Vec3, view: ReturnType<typeof loadGpt2View>, box: { 
 
 test("measured bundle: IOI relations open from the list with every evidence record", async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto("/");
+  await page.goto("./");
   const sidebar = page.getByRole("complementary", { name: "Circuits and heads" });
   await sidebar.getByRole("button", { name: /^Indirect Object Identification \(IOI\)/ }).click();
 
@@ -252,7 +252,7 @@ test("measured bundle: IOI relations open from the list with every evidence reco
 
 test("measured bundle: clicking a ribbon in 3D opens that relation", async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto("/");
+  await page.goto("./");
   await page
     .getByRole("complementary", { name: "Circuits and heads" })
     .getByRole("button", { name: /^Indirect Object Identification \(IOI\)/ })
@@ -281,7 +281,7 @@ test("measured bundle: clicking a ribbon in 3D opens that relation", async ({ pa
 
 test("measured bundle: IOI prompt heatmap labels positions and relations show aligned attention", async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto("/");
+  await page.goto("./");
   await page.getByLabel("Experiment").selectOption("ioi_templates_v1:BABA-t00");
   await headButton(page, "L9H9").click();
 
@@ -334,7 +334,7 @@ test("measured bundle: circuit → relation → focus → head → IOI heatmap, 
   test.setTimeout(90_000);
   test.slow();
   const errors = trackErrors(page);
-  await page.goto("/");
+  await page.goto("./");
   const sidebar = page.getByRole("complementary", { name: "Circuits and heads" });
 
   // 1. Circuit: published, and the status bar says so.
@@ -398,4 +398,49 @@ test("measured bundle: circuit → relation → focus → head → IOI heatmap, 
   await expect(inspector.getByText(/Control run/)).toBeVisible();
   await expect(inspector.getByRole("button", { name: "Show ioi_templates_v1:BABA-t00" })).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test("measured bundle: a first visit shows the guide, and detector top heads open in the inspector", async ({ page }) => {
+  const errors = trackErrors(page);
+  await page.goto("./");
+  const inspector = page.getByRole("complementary", { name: "Head inspector" });
+  const guide = inspector.getByRole("region", { name: "New here? Three things to try" });
+  await expect(guide).toBeVisible();
+  await expect(guide).toContainText("Pick an experiment");
+
+  // Top heads are ranked per detector on the selected experiment; clicking one selects it.
+  const top = page.getByRole("group", { name: "Top heads for induction_attention" }).getByRole("button");
+  await expect(top).toHaveCount(3);
+  const label = /^Inspect (L\d+H\d+) /.exec((await top.first().getAttribute("aria-label")) ?? "")![1]!;
+  await top.first().click();
+  await expect(inspector.getByText(`model:gpt2-small:head:${label}`)).toBeVisible();
+  await expect(guide).toBeHidden();
+
+  // Only detectors scored on the selected experiment are listed; switching suites swaps them.
+  await expect(page.getByText("5 more detectors were not run on this experiment", { exact: false })).toBeVisible();
+  await page.getByLabel("Experiment").selectOption("ioi_templates_v1:BABA-t00");
+  await expect(page.getByRole("group", { name: "Top heads for ioi_end_to_io_attention" })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Top heads for induction_attention" })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("without WebGL the scene shows a fallback and the panels keep working", async ({ page }) => {
+  // Simulate a device without WebGL: every WebGL context request fails.
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...rest: unknown[]) {
+      if (type.startsWith("webgl") || type === "experimental-webgl") {
+        return null;
+      }
+      return (original as (...a: unknown[]) => unknown).call(this, type, ...rest);
+    } as typeof HTMLCanvasElement.prototype.getContext;
+  });
+  await page.goto("./");
+  await expect(page.getByTestId("scene-fallback")).toBeVisible();
+  await expect(page.getByTestId("scene-fallback")).toContainText("The 3D view could not start");
+
+  const inspector = page.getByRole("complementary", { name: "Head inspector" });
+  await headButton(page, "L5H5").click();
+  await expect(inspector.getByText("model:gpt2-small:head:L5H5")).toBeVisible();
+  await expect(inspector.getByText(/^induction_attention/)).toBeVisible();
 });

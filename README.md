@@ -2,21 +2,42 @@
 
 An evidence-aware, interactive 3D atlas of attention heads and circuits in pretrained transformers, starting with GPT-2 Small.
 
-> **Status: M3 complete; M4 (Induction circuit) is next.** The app opens the GPT-2 Small bundle: the published IOI circuit of Wang et al. (2022) drawn as a 3D circuit graph (26 heads, 7 roles, 27 sourced relations), and GPT-2's own attention measured on repeated random tokens and on the paper's IOI prompts, each with a paired control. Published claims are labelled with their source; every measured score is an attention pattern labelled `experimental`, not causal evidence and not a verification of any published role. The synthetic demo fixture is at `?bundle=fixture`.
+**Live demo:** https://cg-brian.github.io/cirqloom/ (static site; no install, no model weights). The synthetic demo fixture is at `?bundle=fixture`.
+
+> **Status: M3 release.** The app opens the GPT-2 Small bundle: the published IOI circuit of Wang et al. (2022) drawn as a 3D circuit graph (26 heads, 7 roles, 27 sourced relations), and GPT-2's own attention measured on repeated random tokens and on the paper's IOI prompts, each with a paired control. Next milestones are in the [roadmap](docs/roadmap.md).
+
+### Three kinds of evidence, kept apart
+
+| Kind | Where it comes from | How the app labels it |
+| --- | --- | --- |
+| Published | Wang et al. (2022): IOI membership, roles and relations, each with a figure or section locator. Cirqloom did not run these experiments. | "Published annotation" / "Published experiment" badges, citation and locator |
+| Measured here | Attention-pattern scores computed by this repository's pipeline on GPT-2 Small, with paired controls | "Experimental" badge, n, settings, control runs |
+| Synthetic | The demo fixture used for tests (`?bundle=fixture`) | "Demo fixture — not measured model data." |
+
+No score in the app is causal evidence produced by Cirqloom, and no measured score verifies a published role.
+
+## First visit: three things to try
+
+The same guide appears in the right-hand panel until you select something.
+
+1. **Explore an attention head.** Click a head in the 3D view, or in the Heads list on the left (arrow keys work there). The inspector shows its scores for the selected experiment and an attention heatmap: rows are destination tokens, columns are source tokens. "Show cells" outlines the exact cells a score averaged. The Detectors section on the left lists each detector's top heads as shortcuts.
+2. **Pick an experiment.** The Experiment menu at the top switches between repeated random tokens (L = 10, 25, 50), IOI sentences built from the paper's templates, and the paired control for each. Compare a head on a measurement run and on its control: an induction head such as L5H5 drops to near zero when nothing repeats.
+3. **Inspect a published relation.** Turn on "Indirect Object Identification (IOI)" in the left panel, then open a relation from its Relations list or click a ribbon. The relation inspector shows the paper's claim (channel, positions, locator, every evidence record) separately from "Observed attention (measured here)" on an IOI prompt.
 
 ## What works today
 
-- A 3D scene of GPT-2 Small's 12 layers × 12 heads, with orbit, pan and zoom, plus Reset view.
-- A circuit overlay with subtle role rings. Non-members recede and spanned layers are outlined. No edges are drawn.
-- Head selection from the 3D scene, or from a keyboard-navigable head list. Both stay in sync.
-- A head inspector that keeps four kinds of evidence separate: circuit membership, published annotations, measured observations and attention. Missing data is stated as missing, never shown as zero.
-- An experiment picker. The inspector shows one experiment's scores at a time (mean ± sd over prompts, n, detector settings), and labels control runs.
-- An attention heatmap for the selected head on one example prompt: row = destination, column = source, fixed 0–1 colour scale, hatched future cells, exact weight and both tokens on hover or arrow keys. "Show cells" on a detector outlines the exact cells its score averaged, exported by the Python pipeline.
-- A Python pipeline: GPT-2 adapter on TransformerLens `TransformerBridge` (pinned revision), deterministic prompt suites, numpy detectors, and a bundle exporter with lazily loaded float16 attention assets.
-- The published IOI circuit (Wang et al., 2022) as a 3D circuit graph: 7 role-group hubs above the layers, 8 evidence-typed ribbons bundling its 27 sourced records (stored at the paper's granularity: head → role group, one group → group, head → logits), Q/K/V channel labels, and a Relation inspector listing every record with its figure. The head inspector separates the paper's roles from our repeated-token scores.
-- IOI prompt experiments built from the paper's templates, with IO / S1 / S1+1 / S2 / END positions checked against the tokenizer: position-labelled heatmaps, five END/S2 attention observations per head, and an "observed attention" table in the relation inspector that lines up a relation's heads at their positions (observations only, not information flow).
-- A paired IOI control (the S2 name replaced by a third name) reported against every IOI experiment, and camera focus on a circuit, a relation or a head.
-- A versioned bundle schema, defined in Python (Pydantic) and TypeScript (zod), with a cross-language contract test.
+- A 3D scene of GPT-2 Small's 12 layers × 12 heads, with orbit, pan and zoom, Reset view, and camera focus on a circuit, a relation or a head.
+- Circuit overlays with subtle role rings: members get a thin ring, non-members recede, spanned layers are outlined.
+- The published IOI circuit (Wang et al., 2022) as a circuit graph: 7 role-group hubs above the layers and 8 evidence-typed ribbons bundling its 27 sourced records, stored at the paper's granularity (head → role group, one group → group, head → logits; never expanded into head pairs), with Q/K/V channel labels. A relation inspector lists every record with its figure.
+- Head selection from the 3D scene or a keyboard-navigable head list; both stay in sync.
+- A head inspector that keeps circuit membership, published annotations, measured observations and attention separate. Missing data is stated as missing, never shown as zero.
+- An experiment picker. Scores are shown for one experiment at a time (mean ± sd over prompts, n, detector settings); control runs are labelled.
+- An attention heatmap for the selected head on one stored prompt: row = destination, column = source, fixed 0–1 colour scale, hatched future cells, exact weight and both tokens on hover or arrow keys, named IOI positions, and "Show cells" for the exact cells a detector averaged (exported by the Python pipeline).
+- Observed attention alignment in the relation inspector: a relation's heads at their IOI positions on one prompt (observations only, not information flow).
+- Detector discovery: each detector's top three heads on the selected experiment, ranked on that detector's own scale.
+- A first-visit guide, and a fallback that keeps every panel usable if WebGL is unavailable.
+- A Python pipeline: GPT-2 adapter on TransformerLens `TransformerBridge` (pinned revision), deterministic prompt suites with paired controls, numpy detectors, and a deterministic bundle exporter with lazily loaded float16 attention assets.
+- A versioned bundle schema in Python (Pydantic) and TypeScript (zod), tied by a cross-language contract test.
 
 ## Quickstart: frontend with the committed bundles
 
@@ -72,6 +93,7 @@ cd analysis && CIRQLOOM_REAL_MODEL=1 ../.venv/bin/pytest tests/test_gpt2_adapter
 # Python (from analysis/)
 ../.venv/bin/ruff check .
 ../.venv/bin/pytest
+CIRQLOOM_REAL_MODEL=1 ../.venv/bin/pytest tests/test_gpt2_adapter.py   # optional, needs weights
 
 # Frontend (from frontend/)
 npm run lint
@@ -80,7 +102,12 @@ npm test
 npm run build
 npx playwright install chromium   # first time only
 npm run e2e                       # browser smoke tests; starts its own dev server on port 5199
+npm run e2e:pages                 # the same tests against a production build under /cirqloom/
 ```
+
+## Deployment (GitHub Pages)
+
+The demo is a static site: `npm run build` writes the app and both bundles to `frontend/dist`. `CIRQLOOM_BASE_PATH` sets the subpath it is served under (default `/`). `.github/workflows/pages.yml` builds for `/<repo>/`, runs the browser tests against that build, and deploys it. One-time setup: **Settings → Pages → Build and deployment → Source: GitHub Actions**. See [ADR 0006](docs/adr/0006-github-pages-deployment.md).
 
 ## Tested versions
 
@@ -96,22 +123,20 @@ npm run e2e                       # browser smoke tests; starts its own dev serv
 
 ```text
 analysis/   Python: schema, detectors, model adapters, prompt suites, capture, bundle export
-data/       Generated bundles: the demo fixture and the measured GPT-2 bundle (~5 MB)
+data/       Generated bundles: the demo fixture and the measured GPT-2 bundle (~12 MB; ~0.5 MB of it gzipped JSON)
 frontend/   React + Vite + TypeScript app (React Three Fiber scene, panels, tests)
 docs/       Architecture, scientific methods, UI guidelines, ADRs
 ```
 
 ## Documentation
 
+- [Specification](docs/spec.md): scope, scientific rules, data contract and acceptance criteria
+- [Roadmap](docs/roadmap.md): what is built and what comes next
 - [Architecture](docs/architecture.md)
-- [Scientific methods](docs/scientific-methods.md)
+- [Scientific methods](docs/scientific-methods.md): prompt suites, detectors, controls and the committed results
 - [UI guidelines](docs/ui-guidelines.md)
-- [ADR 0001: static bundles and parallel schemas](docs/adr/0001-static-bundle-and-parallel-schemas.md)
-- [ADR 0002: measured bundles, schema 1.1.0](docs/adr/0002-measured-bundles-schema-1-1.md)
-- [ADR 0003: detector masks, schema 1.2.0](docs/adr/0003-detector-masks-schema-1-2.md)
-- [ADR 0004: evidence-typed circuit edges, schema 1.3.0](docs/adr/0004-circuit-edges-schema-1-3.md)
-- [ADR 0005: IOI prompts and named positions, schema 1.4.0](docs/adr/0005-ioi-prompts-and-positions-schema-1-4.md)
 - [Source record: IOI circuit (Wang et al., 2022)](docs/sources/ioi-wang-2022.md)
+- ADRs: [0001 static bundles and parallel schemas](docs/adr/0001-static-bundle-and-parallel-schemas.md) · [0002 measured bundles](docs/adr/0002-measured-bundles-schema-1-1.md) · [0003 detector masks](docs/adr/0003-detector-masks-schema-1-2.md) · [0004 evidence-typed circuit edges](docs/adr/0004-circuit-edges-schema-1-3.md) · [0005 IOI prompts and positions](docs/adr/0005-ioi-prompts-and-positions-schema-1-4.md) · [0006 GitHub Pages deployment](docs/adr/0006-github-pages-deployment.md)
 
 ## Scientific stance
 

@@ -1,4 +1,4 @@
-"""Attention tensor contract shared by every detector (AGENTS.md §7.1 steps 4–5).
+"""Attention tensor contract shared by every detector (docs/spec.md §7.1 steps 4–5).
 
 Convention: pattern[batch, head, destination (q), source (k)].
 Row q is the token that reads; column k is the token it reads from.

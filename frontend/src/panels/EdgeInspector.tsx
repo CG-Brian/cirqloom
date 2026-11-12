@@ -39,6 +39,10 @@ export function describeCondition(view: GraphView, circuitId: string, condition:
   return condition;
 }
 
+function isPublished(group: VisualEdgeGroup): boolean {
+  return group.evidenceKind === "published_schematic" || group.evidenceKind === "published_experimental";
+}
+
 function receiverText(view: GraphView, group: VisualEdgeGroup): string {
   if (group.target.kind === "special") {
     return group.target.id;
@@ -48,18 +52,20 @@ function receiverText(view: GraphView, group: VisualEdgeGroup): string {
 }
 
 function granularityText(view: GraphView, group: VisualEdgeGroup): string {
+  // Published relations were measured by the cited paper, not by Cirqloom: say who measured.
+  const measured = isPublished(group) ? "Measured by the source" : "Measured";
   const into = group.target.kind === "special"
     ? `into the ${group.target.id}`
     : `into ${receiverText(view, group)} (${CHANNEL_LABEL[group.channel].long})`;
   if (group.sourceKind === "role_group") {
     const role = senderRoles(view, group)[0];
-    return `Measured with all ${role ? roleLabel(view, group.circuitId, role) : ""} heads changed together ${into}. One record.`;
+    return `${measured} with all ${role ? roleLabel(view, group.circuitId, role) : ""} heads changed together ${into}. One record.`;
   }
   const n = group.edges.length;
   const pairs = group.target.kind === "role_group"
     ? " The source reports no result for any single sender–receiver head pair, so none is drawn."
     : "";
-  return `Measured one sender head at a time ${into}. ${n} record${n === 1 ? "" : "s"}, one per sender head.${pairs}`;
+  return `${measured} one sender head at a time ${into}. ${n} record${n === 1 ? "" : "s"}, one per sender head.${pairs}`;
 }
 
 function senderText(view: GraphView, edge: Edge): string {
@@ -87,7 +93,7 @@ export function EdgeInspector({
   const selectEdgeGroup = useExplorerStore((s) => s.selectEdgeGroup);
   const select = useExplorerStore((s) => s.select);
   const circuit = view.circuitById.get(group.circuitId);
-  const published = group.evidenceKind === "published_schematic" || group.evidenceKind === "published_experimental";
+  const published = isPublished(group);
   const first = group.edges[0]!;
 
   if (collapsed) {
@@ -169,7 +175,9 @@ export function EdgeInspector({
             <dt className="text-slate-500">Conditions</dt>
             <dd className="text-slate-200">
               {group.conditions.length === 0
-                ? "None: holds in the unmodified model."
+                ? published
+                  ? "None beyond the source's own setup (its task prompts, unmodified model)."
+                  : "None: holds in the unmodified model on the stated prompts."
                 : group.conditions.map((c) => <div key={c}>{describeCondition(view, group.circuitId, c)}</div>)}
             </dd>
             <dt className="text-slate-500">Magnitude</dt>

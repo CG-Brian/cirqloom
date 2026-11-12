@@ -1,4 +1,4 @@
-// Keyboard-accessible parallel to the 3D scene (AGENTS.md §9): every head is a real button.
+// Keyboard-accessible parallel to the 3D scene (docs/spec.md §9): every head is a real button.
 // Selection lives in the shared store, so picking here and clicking in 3D stay in sync.
 //
 // Keys: one Tab stop for the whole grid (roving tabindex). Arrow keys move and select

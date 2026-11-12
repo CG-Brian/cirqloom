@@ -1,4 +1,4 @@
-"""Induction-like attention mask on repeated random tokens (checkpoint 5, AGENTS.md §7.4).
+"""Induction-like attention mask on repeated random tokens (checkpoint 5, docs/spec.md §7.4).
 
 An induction head completes [A][B] ... [A] → [B]: at the second A it attends to the token
 *after* the earlier A. It relies on an earlier previous-token head (K-composition).
@@ -13,7 +13,7 @@ induction source is the next position: k = q - L + 1.
 
 Only second-copy rows are used. The full diagonal(1 - L) also contains (L-1, 0), an
 attention-sink cell, and (L, 1), a first-copy cell with no earlier occurrence; averaging
-the whole diagonal would mix those in (AGENTS.md §15).
+the whole diagonal would mix those in (docs/spec.md §15).
 
 This measures attention (QK) only. Whether the head actually copies the token (OV, logit
 attribution) is a separate copy_support_score, and the label is induction_like_candidate.

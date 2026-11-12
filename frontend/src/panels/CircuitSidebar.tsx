@@ -1,15 +1,18 @@
-// Left panel: circuit overlays, the role legend for the active one, detector overlays, and the
-// keyboard head list. Reads and writes the shared store; holds no selection state of its own.
+// Left panel: circuit overlays, the role legend for the active one, detectors with their top
+// heads on the selected experiment, and the keyboard head list. Reads and writes the shared store; holds no selection state of its own.
+import type { Experiment } from "../data/schema";
 import { circuitFocusBounds, type CircuitLayout } from "../features/circuits/circuitLayout";
 import { edgeGroupLabel, EVIDENCE_KIND_LABEL, getEdgeDisplayStyle, type VisualEdgeGroup } from "../features/circuits/edgeGroups";
 import type { GraphView } from "../features/experiment/graphView";
-import { getRoleLegend, type CircuitOverlay } from "../features/overlays/selectors";
+import { getRoleLegend, getTopHeads, type CircuitOverlay } from "../features/overlays/selectors";
 import { useExplorerStore } from "../features/selection/store";
 import { HeadList } from "./HeadList";
 import { CollapseButton, EmptyNote, EvidenceBadge, OriginBadge, PanelSection, RoleMarker } from "./ui";
 
 interface CircuitSidebarProps {
   view: GraphView;
+  /** The experiment the inspector shows; detector top heads are ranked on it. */
+  experiment: Experiment | null;
   overlay: CircuitOverlay | null;
   edgeGroups: VisualEdgeGroup[];
   circuitLayout: CircuitLayout | null;
@@ -18,6 +21,31 @@ interface CircuitSidebarProps {
 }
 
 const LINE_DASH = { solid: undefined, dashed: "5 3", dotted: "1.5 3" } as const;
+
+/** A detector's highest-scoring heads on one experiment, as buttons that select the head. */
+function TopHeads({ view, experimentId, detectorId }: { view: GraphView; experimentId: string; detectorId: string }) {
+  const select = useExplorerStore((s) => s.select);
+  const top = getTopHeads(view, experimentId, detectorId);
+  if (top.length === 0) {
+    return <div className="mt-0.5 text-[10px] text-slate-500 italic">Not run on this experiment.</div>;
+  }
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-1" aria-label={`Top heads for ${detectorId}`} role="group">
+      <span className="text-[10px] text-slate-500">Top:</span>
+      {top.map((t) => (
+        <button
+          key={t.nodeId}
+          type="button"
+          onClick={() => select(t.nodeId)}
+          aria-label={`Inspect ${t.label} (${detectorId} ${t.score.toPrecision(3)})`}
+          className="rounded border border-slate-700 px-1.5 py-px font-mono text-[10px] text-slate-300 tabular-nums hover:border-slate-500 hover:text-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400"
+        >
+          {t.label} {t.score.toFixed(2)}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /** Keyboard-accessible list of the shown circuit's relations, parallel to the 3D ribbons. */
 function RelationList({ view, groups }: { view: GraphView; groups: VisualEdgeGroup[] }) {
@@ -74,10 +102,15 @@ function RelationList({ view, groups }: { view: GraphView; groups: VisualEdgeGro
   );
 }
 
-export function CircuitSidebar({ view, overlay, edgeGroups, circuitLayout, collapsed, onToggleCollapsed }: CircuitSidebarProps) {
+export function CircuitSidebar({ view, experiment, overlay, edgeGroups, circuitLayout, collapsed, onToggleCollapsed }: CircuitSidebarProps) {
   const activeCircuitId = useExplorerStore((s) => s.activeCircuitId);
   const focusCamera = useExplorerStore((s) => s.focusCamera);
   const toggleCircuit = useExplorerStore((s) => s.toggleCircuit);
+  // Detectors scored on the shown experiment; the rest are summarised in one line.
+  const shownDetectors = experiment
+    ? view.detectors.filter((d) => getTopHeads(view, experiment.id, d.id, 1).length > 0)
+    : view.detectors;
+  const hiddenDetectors = view.detectors.length - shownDetectors.length;
 
   if (collapsed) {
     return (
@@ -182,23 +215,33 @@ export function CircuitSidebar({ view, overlay, edgeGroups, circuitLayout, colla
             <EmptyNote>No functional detectors were run for this bundle.</EmptyNote>
           ) : (
             <>
-              <ul className="space-y-1">
-                {view.detectors.map((d) => (
-                  <li key={d.id} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-xs">
-                    <span className="font-mono text-slate-200">
-                      {d.id} <span className="text-slate-500">v{d.version}</span>
-                    </span>
-                    <span className="flex gap-1">
-                      {d.statuses.map((status) => (
-                        <EvidenceBadge key={status} status={status} />
-                      ))}
-                    </span>
+              <ul className="space-y-2">
+                {shownDetectors.map((d) => (
+                  <li key={d.id} className="text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
+                      <span className="font-mono text-slate-200">
+                        {d.id} <span className="text-slate-500">v{d.version}</span>
+                      </span>
+                      <span className="flex gap-1">
+                        {d.statuses.map((status) => (
+                          <EvidenceBadge key={status} status={status} />
+                        ))}
+                      </span>
+                    </div>
+                    {experiment && <TopHeads view={view} experimentId={experiment.id} detectorId={d.id} />}
                   </li>
                 ))}
               </ul>
+              {hiddenDetectors > 0 && (
+                <p className="mt-2 text-[10px] text-slate-500 italic">
+                  {hiddenDetectors} more detector{hiddenDetectors === 1 ? " was" : "s were"} not run on this
+                  experiment; pick another experiment to see {hiddenDetectors === 1 ? "it" : "them"}.
+                </p>
+              )}
               <p className="mt-2 text-[10px] leading-snug text-slate-500">
-                Scores are in the head inspector. Score overlays and thresholds on the 3D
-                scene are not built yet.
+                Top heads on the selected experiment, ranked on each detector&apos;s own scale: scores
+                of different detectors are not comparable. Click a head to inspect it. Score overlays
+                and thresholds on the 3D scene are not built.
               </p>
             </>
           )}

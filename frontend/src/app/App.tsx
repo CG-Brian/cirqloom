@@ -1,4 +1,4 @@
-// App shell (AGENTS.md §9 screen anatomy): top bar, circuit sidebar, 3D scene, head inspector,
+// App shell (docs/spec.md §9 screen anatomy): top bar, circuit sidebar, 3D scene, head inspector,
 // status bar. Domain state (selection, active circuit) lives in the store; panel collapse is
 // local layout state.
 import { useMemo, useState } from "react";
@@ -15,14 +15,17 @@ import { useEscapeToDeselect } from "../features/selection/useEscapeToDeselect";
 import { CircuitSidebar } from "../panels/CircuitSidebar";
 import { HeadInspector } from "../panels/HeadInspector";
 import { ModelScene } from "../scene/ModelScene";
+import { SceneErrorBoundary } from "../scene/SceneErrorBoundary";
 import { StatusBar } from "./StatusBar";
 import { TopBar } from "./TopBar";
 
 // Served from ../data (vite publicDir). The measured bundle is the default; ?bundle=fixture
 // opens the synthetic demo fixture, which the browser smoke tests use for its circuit.
+// BASE_URL is "/" in development and the Pages subpath (e.g. "/cirqloom/") in a deployed build.
+const BASE = import.meta.env.BASE_URL;
 const BUNDLE_PATHS = {
-  measured: "/bundles/gpt2-small",
-  fixture: "/fixtures/gpt2-small-demo",
+  measured: `${BASE}bundles/gpt2-small`,
+  fixture: `${BASE}fixtures/gpt2-small-demo`,
 } as const;
 
 function bundleFromUrl(): keyof typeof BUNDLE_PATHS {
@@ -68,11 +71,14 @@ function Explorer({ manifest, view }: { manifest: Manifest; view: GraphView }) {
       <TopBar manifest={manifest} experiment={experiment} />
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
         <main className="relative order-1 h-[55vh] shrink-0 lg:order-2 lg:h-auto lg:min-w-0 lg:flex-1">
-          <ModelScene view={view} overlay={overlay} edgeGroups={edgeGroups} circuitLayout={circuitLayout} />
+          <SceneErrorBoundary>
+            <ModelScene view={view} overlay={overlay} edgeGroups={edgeGroups} circuitLayout={circuitLayout} />
+          </SceneErrorBoundary>
         </main>
         <div className="order-2 lg:order-1 lg:flex">
           <CircuitSidebar
             view={view}
+            experiment={experiment}
             overlay={overlay}
             edgeGroups={edgeGroups}
             circuitLayout={circuitLayout}

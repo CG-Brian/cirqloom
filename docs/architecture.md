@@ -32,18 +32,19 @@ data/bundles/gpt2-small/              manifest.json, graph.json, assets/, README
 
 ## Data flow in the app
 
-1. `StaticBundleProvider` fetches `manifest.json`, then `graph.json`. Each is parsed with zod, then `crossCheckBundle` checks the two together. Failures throw typed errors (`BundleLoadError`, `BundleSchemaError`) that the app shows verbatim.
+1. `StaticBundleProvider` fetches `manifest.json`, then `graph.json`, from a bundle folder under `import.meta.env.BASE_URL` (`/` locally, `/cirqloom/` on GitHub Pages; ADR 0006). Each is parsed with zod, then `crossCheckBundle` checks the two together. Failures throw typed errors (`BundleLoadError`, `BundleSchemaError`) that the app shows verbatim.
 2. `buildGraphView` indexes the bundle once: nodes sorted by (layer, head), positions from `scene/layout.ts`, and lookups for nodes, memberships and observations per head.
 3. `getActiveExperiment` picks the experiment to show (the user's pick, else the first measurement run); the inspector filters observations to it, because scores from different suites are not comparable.
 4. `App` computes the active `CircuitOverlay` once from the store's `activeCircuitId` and passes it to the scene, sidebar and status bar.
 5. Components read UI state from `useExplorerStore` with narrow selectors, then call pure selectors (`getNodeDisplayStyle`, `getLayerFrameStyle`, `getHeadEvidence`, …) to decide what to draw.
+6. The 3D scene sits inside `SceneErrorBoundary`. If WebGL cannot start, only the scene area shows a fallback; the sidebar, head list and inspectors are outside the boundary and keep working.
 
 ## State
 
 | State | Lives in | Why |
 | --- | --- | --- |
 | Bundle data | `useBundle` result → `GraphView` | Immutable once loaded |
-| Selection, hover, active circuit, experiment, mask detector, view mode, camera command | Zustand store | Shared by 3D scene, list, inspector; narrow subscriptions keep re-renders small |
+| Selection, hover, active circuit, experiment, mask detector, camera command | Zustand store | Shared by 3D scene, list, inspector; narrow subscriptions keep re-renders small |
 | Camera pose | `CameraController` (three.js objects) | Changes every frame; must not re-render React |
 | Panel collapse | `App` local state | Layout only |
 
@@ -58,11 +59,15 @@ The camera is driven by events, not state: `resetCamera()` bumps a nonce in the 
 
 Schema rules shared by both languages: unknown keys are rejected, NaN and Infinity are rejected, `score` is `null` if and only if `status` is `"unavailable"`, and node ids are `model:{model}:head:L{layer}H{head}` (zero-based). See [ADR 0001](adr/0001-static-bundle-and-parallel-schemas.md).
 
+## Deployment
+
+`npm run build` writes a static site to `frontend/dist` (the app plus `data/` as public files). `CIRQLOOM_BASE_PATH` sets the subpath it is served under. `.github/workflows/pages.yml` builds for `/<repo>/`, runs the Playwright suite against that build, and deploys it to GitHub Pages (ADR 0006). `npm run e2e:pages` does the same build and test locally.
+
 ## Extension seams
 
 - **New data source:** implement `DataProvider`. The UI needs no change.
 - **New model:** the layout and scene take layer and head counts from the manifest; nothing assumes 12×12.
-- **New detector:** emit `Observation` records. The inspector already renders measured, candidate, experimental and unavailable states.
+- **New detector:** emit `Observation` records. The inspector already renders measured, candidate, experimental and unavailable states, and the sidebar ranks its top heads per experiment (`getTopHeads`).
 - **Circuit graph (M3 step 3):** `features/circuits/edgeGroups.ts` bundles `Graph.edges` into `VisualEdgeGroup`s without modifying a record and provides labels, the heads a relation is about, and line styles; `features/circuits/circuitLayout.ts` places role-group hubs, subset anchors, `logits`, and curve points in the band above the layers (`circuitBandY`; `sceneBounds` frames it). `scene/CircuitEdgeLayer.tsx` draws them; `panels/EdgeInspector.tsx` shows one relation and its records. The store adds `hoveredEdgeGroupId` / `selectedEdgeGroupId`; selecting a head or a relation clears the other. Nothing is IOI-specific: any circuit with role groups and edges uses the same path.
 - **Focus camera (M3 step 5):** `CameraCommand` is `reset` or `focus` (with plain `Bounds`); `CameraController` animates to `canonicalCameraPose(bounds)` and treats a focus as user-moved. Focus bounds are pure selectors in `features/circuits/circuitLayout.ts`.
 - **Attention heatmap (M2 P1):** `useHeadAttention` loads one head through `DataProvider.loadHeadAttention` and drops answers for a head or experiment that is no longer selected. `AttentionPanel` picks the honest state; `AttentionHeatmap` only draws (canvas, one pixel per cell scaled up). Pure helpers (`features/attention/heatmapModel.ts`) do mask lookup, colours, geometry and cell readouts. Masks come from `graph.masks` (ADR 0003), never recomputed in TypeScript.

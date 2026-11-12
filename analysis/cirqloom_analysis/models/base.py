@@ -1,4 +1,4 @@
-"""Model adapter contract (M1 Phase 2, AGENTS.md §7.1, §14).
+"""Model adapter contract (M1 Phase 2, docs/spec.md §7.1, §14).
 
 An adapter is the only place that knows the model library (TransformerLens, torch, hook names,
 devices). Everything outside it speaks numpy and this module's conventions:
@@ -52,7 +52,7 @@ class AdapterInfo:
     """Token placed at position 0 of every prompt (GPT-2: <|endoftext|>, 50256)."""
 
     def to_bundle_model(self) -> ModelInfo:
-        """The bundle's `model` record (AGENTS.md §8)."""
+        """The bundle's `model` record (docs/spec.md §8)."""
         return ModelInfo(
             id=self.model_id,
             hf_id=self.hf_id,

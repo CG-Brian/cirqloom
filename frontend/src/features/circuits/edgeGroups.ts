@@ -1,4 +1,4 @@
-// Evidence → visualisation, without changing the evidence (AGENTS.md §8, §9, ADR 0004).
+// Evidence → visualisation, without changing the evidence (docs/spec.md §8, §9, ADR 0004).
 //
 // The bundle stores each relation at the granularity it was measured at (e.g. one sender head
 // into a whole role group). For drawing, edges that say the same thing about the same

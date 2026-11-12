@@ -1,4 +1,4 @@
-// Pure highlight logic (AGENTS.md §9, §10). Inputs are the GraphView and plain flags from the
+// Pure highlight logic (docs/spec.md §9, §10). Inputs are the GraphView and plain flags from the
 // store; outputs are plain style descriptions. Nothing here imports three.js or React.
 //
 // Emphasis rules:
@@ -287,4 +287,28 @@ export function getRoleLegend(overlay: CircuitOverlay): RoleLegendEntry[] {
     style: getRoleStyle(overlay.circuit, role.id),
     memberCount: counts.get(role.id) ?? 0,
   }));
+}
+
+export interface TopHead {
+  nodeId: string;
+  label: string;
+  score: number;
+}
+
+/**
+ * The highest-scoring heads for one detector on one experiment, for detector discovery in the
+ * sidebar. Ranked on that detector's own scale only (scores of different detectors or suites are
+ * not comparable). Heads without a score are left out, never ranked as 0. Ties keep layer/head order.
+ */
+export function getTopHeads(view: GraphView, experimentId: string, detectorId: string, k = 3): TopHead[] {
+  const scored: TopHead[] = [];
+  for (const node of view.nodes) {
+    const obs = view.observationsByNode
+      .get(node.id)
+      ?.find((o) => o.experiment_id === experimentId && o.detector_id === detectorId);
+    if (obs && obs.score !== null) {
+      scored.push({ nodeId: node.id, label: node.label, score: obs.score });
+    }
+  }
+  return scored.sort((a, b) => b.score - a.score).slice(0, k);
 }

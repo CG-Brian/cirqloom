@@ -68,7 +68,7 @@ def test_matrix_for_l3_matches_hand_calculation():
 @pytest.mark.parametrize("repeat_len", [3, 5, 10, 50])
 def test_each_detector_ranks_its_own_head_first(repeat_len):
     # Per column: the matching head beats every other head. Compared within one detector
-    # only; scores of different detectors are not on a common scale (AGENTS.md §5).
+    # only; scores of different detectors are not on a common scale (docs/spec.md §5).
     m = matrix(repeat_len)
     for d in range(len(DETECTORS)):
         own = m[d, d]

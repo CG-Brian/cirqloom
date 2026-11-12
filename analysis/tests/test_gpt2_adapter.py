@@ -1,6 +1,6 @@
 """M1 Phase 2, P2-2: the real GPT-2 adapter. Downloads ~500 MB of weights on first run.
 
-Skipped unless CIRQLOOM_REAL_MODEL=1 (AGENTS.md §12: normal test runs never download weights):
+Skipped unless CIRQLOOM_REAL_MODEL=1 (docs/spec.md §12: normal test runs never download weights):
 
     CIRQLOOM_REAL_MODEL=1 pytest tests/test_gpt2_adapter.py
 """

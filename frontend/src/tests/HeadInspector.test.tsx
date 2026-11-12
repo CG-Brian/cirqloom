@@ -72,6 +72,21 @@ describe("HeadInspector on the synthetic fixture", () => {
     expect(screen.getByText(/select a head/i)).toBeInTheDocument();
   });
 
+  it("shows the visitor guide without steps the fixture cannot do", () => {
+    renderInspector();
+    const guide = screen.getByRole("region", { name: "New here? Three things to try" });
+    expect(within(guide).getByText(/Explore an attention head/)).toBeInTheDocument();
+    // The fixture has no experiments and no relations: no experiment step, no relation promise.
+    expect(within(guide).queryByText(/Pick an experiment/)).toBeNull();
+    expect(within(guide).getByText(/role groups and member heads/)).toBeInTheDocument();
+  });
+
+  it("hides the visitor guide once a head is selected", () => {
+    useExplorerStore.setState({ selectedNodeId: "model:gpt2-small:head:L3H3" });
+    renderInspector();
+    expect(screen.queryByRole("region", { name: "New here? Three things to try" })).toBeNull();
+  });
+
   it("shows identity and fixture membership for a member head", () => {
     useExplorerStore.setState({ selectedNodeId: "model:gpt2-small:head:L3H3" });
     renderInspector();
@@ -202,6 +217,9 @@ describe("HeadInspector with observations", () => {
     const measured = section("Measured observations");
     expect(within(measured).getByText(/Control run/)).toBeInTheDocument();
     expect(within(measured).getByText(/not a causal role/)).toBeInTheDocument();
+    // Controls exist and are reported; what is missing is a pass/fail rule, not the controls.
+    expect(within(measured).getByText(/Paired controls are run and reported, but no pass\/fail rule/)).toBeInTheDocument();
+    expect(within(measured).getAllByText(/^Reference:/).length).toBeGreaterThan(0);
     expect(within(section("Attention")).getByText(/keeps scores only/)).toBeInTheDocument();
   });
 
@@ -351,6 +369,14 @@ describe("HeadInspector on the GPT-2 bundle with the published IOI circuit", () 
     renderInspector(measured.view, measured.manifest, repeatedL10);
     expect(screen.queryByTestId("published-vs-measured")).toBeNull();
   });
+
+  it("guides a first-time visitor through head, experiment and IOI relation", () => {
+    renderInspector(measured.view, measured.manifest, repeatedL10);
+    const guide = screen.getByRole("region", { name: "New here? Three things to try" });
+    expect(within(guide).getByText(/Pick an experiment/)).toBeInTheDocument();
+    expect(within(guide).getByText(/Turn on Indirect Object Identification \(IOI\) in the left panel/)).toBeInTheDocument();
+    expect(within(guide).getByText(/keeps the paper's claim apart from attention measured here/)).toBeInTheDocument();
+  });
 });
 
 describe("Relation inspector (IOI)", () => {
@@ -372,15 +398,17 @@ describe("Relation inspector (IOI)", () => {
       expect(within(records).getByText(new RegExp(`^${head} \\(S-Inhibition\\) → Name Mover$`))).toBeInTheDocument();
     }
     expect(within(panel).getByTestId("relation-granularity")).toHaveTextContent(
-      "Measured one sender head at a time into the whole Name Mover group (queries). 4 records, one per sender head. The source reports no result for any single sender–receiver head pair",
+      "Measured by the source one sender head at a time into the whole Name Mover group (queries). 4 records, one per sender head. The source reports no result for any single sender–receiver head pair",
     );
+    // A published relation holds in the paper's setup, not as a general property of the model.
+    expect(within(panel).getByText("None beyond the source's own setup (its task prompts, unmodified model).")).toBeInTheDocument();
   });
 
   it("states the group-level experiment and the knockout condition honestly", () => {
     useExplorerStore.setState({ selectedEdgeGroupId: groupWhere("Figure 4c").id });
     const { unmount } = renderInspector(measured.view, measured.manifest, null, stubProvider, groups);
     expect(screen.getByTestId("relation-granularity")).toHaveTextContent(
-      "Measured with all S-Inhibition heads changed together into the whole Name Mover group (queries). One record.",
+      "Measured by the source with all S-Inhibition heads changed together into the whole Name Mover group (queries). One record.",
     );
     unmount();
     useExplorerStore.setState({ selectedEdgeGroupId: groupWhere("Figure 15").id });

@@ -12,7 +12,7 @@ supports match and scores can be compared side by side.
 import numpy as np
 
 DEFAULT_BURN_IN = 2
-"""Skip rows 0 and 1: the safe default (AGENTS.md §0 "do not overclaim")."""
+"""Skip rows 0 and 1: the safe default (docs/spec.md §0 "do not overclaim")."""
 
 MIN_BURN_IN = 1
 """Row 0 is never evidence. burn_in=1 keeps row 1, which is allowed but ambiguous."""

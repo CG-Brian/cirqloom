@@ -9,6 +9,7 @@ import {
   getLayerFrameStyle,
   getNodeDisplayStyle,
   getRoleLegend,
+  getTopHeads,
   PALETTE,
   ROLE_STYLES,
 } from "../features/overlays/selectors";
@@ -222,5 +223,47 @@ describe("node style while a relation is in focus", () => {
 
   it("never dims the selected head", () => {
     expect(withFocus(id(0, 1), "other", true).opacity).toBe(1);
+  });
+});
+
+describe("getTopHeads", () => {
+  const obs = (layer: number, head: number, detector_id: string, experiment_id: string, score: number | null) => ({
+    node_id: id(layer, head),
+    experiment_id,
+    detector_id,
+    detector_version: "1.0.0",
+    evidence_type: "heuristic_attention" as const,
+    method_reference: "test",
+    parameters: {},
+    score,
+    score_std: null,
+    per_example_scores: score === null ? [] : [score],
+    status: score === null ? ("unavailable" as const) : ("experimental" as const),
+    sample_count: score === null ? 0 : 1,
+  });
+  const scored = buildGraphView(manifest, {
+    ...graph,
+    observations: [
+      obs(0, 0, "d", "e1", 0.2),
+      obs(0, 1, "d", "e1", null),
+      obs(1, 0, "d", "e1", 0.9),
+      obs(1, 1, "d", "e1", 0.2),
+      obs(1, 1, "d", "e2", 0.99),
+      obs(0, 1, "other", "e1", 5),
+    ],
+  });
+
+  it("ranks one detector on one experiment, highest first, ties in layer/head order", () => {
+    expect(getTopHeads(scored, "e1", "d").map((t) => [t.label, t.score])).toEqual([
+      ["L1H0", 0.9],
+      ["L0H0", 0.2],
+      ["L1H1", 0.2],
+    ]);
+  });
+
+  it("never mixes in another experiment or detector, and skips missing scores instead of using 0", () => {
+    expect(getTopHeads(scored, "e1", "d", 10).map((t) => t.label)).not.toContain("L0H1");
+    expect(getTopHeads(scored, "e2", "d", 10).map((t) => t.label)).toEqual(["L1H1"]);
+    expect(getTopHeads(scored, "e3", "d")).toEqual([]);
   });
 });

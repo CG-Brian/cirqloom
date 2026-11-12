@@ -1,9 +1,7 @@
-// Shared UI state (AGENTS.md §10). Holds ids and flags only: no three.js objects, no camera pose,
+// Shared UI state (docs/spec.md §10). Holds ids and flags only: no three.js objects, no camera pose,
 // no bundle data. Scene components subscribe with narrow selectors so a hover re-renders 2 nodes.
 import { create } from "zustand";
 import type { Bounds } from "../../scene/layout";
-
-export type ViewMode = "structure" | "functional" | "published-ioi";
 
 /**
  * A one-shot request to the camera controller. `nonce` makes repeated requests distinct.
@@ -12,7 +10,6 @@ export type ViewMode = "structure" | "functional" | "published-ioi";
 export type CameraCommand = { kind: "reset"; nonce: number } | { kind: "focus"; bounds: Bounds; nonce: number };
 
 export interface ExplorerState {
-  viewMode: ViewMode;
   /** Experiment the user picked; null means the bundle's default (see getActiveExperiment). */
   experimentId: string | null;
   activeCircuitId: string | null;
@@ -27,7 +24,6 @@ export interface ExplorerState {
 }
 
 export interface ExplorerActions {
-  setViewMode(viewMode: ViewMode): void;
   setExperiment(experimentId: string): void;
   /** Activates the circuit overlay, or turns it off if it is already active. */
   toggleCircuit(circuitId: string): void;
@@ -49,7 +45,6 @@ export interface ExplorerActions {
 export type ExplorerStore = ExplorerState & ExplorerActions;
 
 export const initialExplorerState: ExplorerState = {
-  viewMode: "structure",
   experimentId: null,
   activeCircuitId: null,
   maskDetectorId: null,
@@ -62,7 +57,6 @@ export const initialExplorerState: ExplorerState = {
 
 export const useExplorerStore = create<ExplorerStore>()((set) => ({
   ...initialExplorerState,
-  setViewMode: (viewMode) => set({ viewMode }),
   setExperiment: (experimentId) => set({ experimentId }),
   // Relations belong to one circuit, so switching circuits closes them.
   toggleCircuit: (circuitId) =>

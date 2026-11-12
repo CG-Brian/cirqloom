@@ -1,4 +1,4 @@
-"""Repeated random-token prompts and their non-repeated control (M1 Phase 3, AGENTS.md §7.4).
+"""Repeated random-token prompts and their non-repeated control (M1 Phase 3, docs/spec.md §7.4).
 
     repeated_tokens_v1      (BOS, X, X)   X: repeat_len random tokens
     nonrepeated_tokens_v1   (BOS, X, Y)   Y: repeat_len fresh random tokens, same length

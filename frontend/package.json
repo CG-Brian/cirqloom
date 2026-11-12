@@ -7,7 +7,9 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "build:pages": "CIRQLOOM_BASE_PATH=/cirqloom/ npm run build",
+    "e2e:pages": "npm run build:pages && CIRQLOOM_BASE_PATH=/cirqloom/ playwright test"
   },
   "type": "module",
   "dependencies": {

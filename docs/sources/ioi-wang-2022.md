@@ -1,6 +1,6 @@
 # Source record: GPT-2 Small IOI circuit (Wang et al., 2022)
 
-Status: draft for review (M3 step 1, 2026-10-28). Nothing has been imported into a bundle yet.
+Status: reviewed and imported (2026-10-28). The annotations below are in `analysis/cirqloom_analysis/published/ioi/annotations.json` (version 1.0.0) and in the bundle `gpt2-small:v2` (`data/bundles/gpt2-small/`). `analysis/tests/test_ioi_import.py` checks the import against an independent copy of these tables.
 
 ## Sources checked
 
@@ -66,7 +66,7 @@ Figure 2 itself is a schematic: its arrows show which residual streams heads rea
 - Locally measured M1 scores agree with two classes: the induction detector's top heads include L5H5 and L6H9, and the previous-token detector's top head is L4H11. This is a correlation on our repeated-token suite. It does not verify the paper's IOI roles, and the two must stay separate in the UI.
 - L10H7 is a Negative Name Mover here. It is also the copy-suppression example in McDougall et al. (2024). Keep these as two separate annotations with their own citations, and never label it S-Inhibition.
 
-## Import plan (agreed 2026-10-28, schema 1.3.0)
+## Import (schema 1.3.0, as implemented)
 
 Edges are stored at the granularity each experiment measured: one sender head at a time into a whole receiving group, except Figure 4c (all four S-Inhibition heads patched together). All are `published_experimental` with status `published`, `magnitude: null` (no numbers are read off figures), and a `locator`. `effect.direction` is the direction of the sender's own contribution, not the sign of the patching effect.
 
@@ -87,4 +87,4 @@ Not imported:
 
 - Figure 2 arrows as `published_schematic` edges: every arrow is already covered by an experimental edge above.
 - The Appendix C sentence that Duplicate Token Heads 3.0 and 0.1 influence the S-Inhibition heads with a reversed effect: it sits in the keys section but says "values", so its channel is ambiguous.
-- Head-pair edges (for example 7.3 → 9.9): no head-pair result exists in the paper. They need our own weight-composition or patching evidence (§7.8, §7.9) and would be stored as separate measured edges.
+- Head-pair edges (for example 7.3 → 9.9): no head-pair result exists in the paper. They need our own weight-composition or patching evidence ([spec](../spec.md) §7.8, §7.9) and would be stored as separate measured edges.

@@ -1,5 +1,5 @@
 // IEEE 754 half precision → JS number. Bundles store attention as little-endian float16
-// (AGENTS.md §8 asset strategy); decoding by hand avoids depending on Float16Array support.
+// (docs/spec.md §8 asset strategy); decoding by hand avoids depending on Float16Array support.
 
 export function halfToNumber(bits: number): number {
   const sign = bits & 0x8000 ? -1 : 1;

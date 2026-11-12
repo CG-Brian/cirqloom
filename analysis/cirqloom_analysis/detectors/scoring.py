@@ -19,7 +19,7 @@ class MaskedScore:
     """Shape [batch, head]: mean attention weight over the masked cells, per example and head."""
 
     support: int
-    """How many (q, k) cells the mask selects. Reported with every score (AGENTS.md §7.4)."""
+    """How many (q, k) cells the mask selects. Reported with every score (docs/spec.md §7.4)."""
 
 
 def masked_head_mean(pattern: np.ndarray, mask: np.ndarray) -> MaskedScore:

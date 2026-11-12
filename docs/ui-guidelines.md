@@ -40,10 +40,16 @@ Roles are assigned by their index in the circuit's role list. Each colour (Okabe
 
 The 3D ring and the sidebar's `RoleMarker` use the same style.
 
+## Detectors in the sidebar
+
+- Each detector lists its top three heads on the selected experiment (`getTopHeads`), as buttons that select the head. Ranking is within one detector on one experiment: scores of different detectors or suites are never compared. Heads without a score are skipped, never ranked as 0. Detectors with no score on the selected experiment are not listed; one line says how many were not run on it.
+- There are no score overlays or thresholds on the 3D scene yet.
+
 ## Layout
 
 - **Desktop:** top bar, then circuit sidebar (256 px) | 3D scene | head inspector (384 px, wide enough for a 101 × 101 heatmap), then status bar. Both panels collapse to a 36 px rail.
 - **Narrow screens (< 1024 px):** the scene is on top (55 vh), with the sidebar and inspector stacked below and no horizontal scroll.
+- **No WebGL:** the scene area shows a fallback message (`SceneErrorBoundary`); the head list, relation list and inspectors keep working.
 - **Camera:** 15° FOV (a long lens, so all layer planes read alike), canonical view from the front-right and above, fitted to the canvas aspect. The view refits on resize until the user moves the camera.
 
 ## Interaction
@@ -60,6 +66,7 @@ The 3D ring and the sidebar's `RoleMarker` use the same style.
 - Ribbons are curves between anchors, above the model, ending with an arrow at the receiver. Line pattern encodes evidence: solid = published experiment, dashed = published schematic, thinner = weight composition, thicker = causal (ours), dotted = holds only under a condition. Colour stays neutral. Relations between the same two anchors are lifted apart. A channel label (Q, K, V, logits ±) sits at the middle.
 - Hover (3D or the sidebar list) emphasises the relation and the heads its evidence is about (sender heads, receiving group members); everything else recedes. Click opens the **Relation inspector** in place of the head inspector: sender, receiver, channel, positions, effect (the sender's own contribution), conditions, magnitude, a granularity statement, citation and locator, every original evidence record (with "Inspect head"), and what the ribbon does not show. A head's inspector lists the relations it takes part in.
 - The sidebar's "Relations" list is the keyboard path to every ribbon. Escape or an empty-space click clears the selection.
+- The relation inspector says who measured a published relation ("Measured by the source …") and states its conditions as the source's own setup, not as a general property of the model.
 
 ## Focus and provenance labels
 
@@ -78,9 +85,11 @@ The 3D ring and the sidebar's `RoleMarker` use the same style.
 1. **Identity:** stable id, model, revision ("none — no weights loaded" for fixtures), layer and head (zero-based).
 2. **Circuit membership:** role marker, role, circuit, origin badge (Synthetic fixture / Published annotation), evidence-status badge, source.
 3. **Published annotations:** only memberships whose circuit is published, with citation. Otherwise an explicit "none" note.
-4. **Measured observations:** detector, version, status, score (or "Not measured"), n, evidence type, experiment, method.
+4. **Measured observations:** detector, version, status, score (or "Not measured"), n, evidence type, experiment, reference (the source that describes the pattern; the detector definition is Cirqloom's, see `docs/scientific-methods.md`). The footnote says paired controls are run and reported but no pass/fail rule is applied.
 5. **Attention:** a heatmap only when the selected experiment stores attention; otherwise an explicit note (no experiments; control run, with a link to the measurement run of the same length; loading; load error). See *Attention heatmap* below.
 6. **What this does not show:** a short causal caveat.
+
+With nothing selected, the inspector shows a short **visitor guide**: explore a head, pick an experiment (only when the bundle has experiments), and open a relation of the first circuit that has relations. It disappears on selection and never covers the scene.
 
 ## Attention heatmap
 

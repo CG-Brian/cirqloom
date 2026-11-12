@@ -4,7 +4,7 @@
 
 Two bundles are committed:
 
-- `data/bundles/gpt2-small/` (default in the app, bundle id `gpt2-small:v2`): measured attention scores for GPT-2 Small (`openai-community/gpt2` at a pinned revision), plus the **published** IOI circuit (Wang et al., 2022: 7 roles, 26 members, 27 relations) imported from `analysis/cirqloom_analysis/published/ioi/annotations.json`. The two are kept apart: published records have status `published`, a citation and a locator, and no numbers; measured records are `experimental` and come from repeated random tokens, which do not test any IOI role. Provenance lists the annotation version under `published circuit:gpt2-small:ioi:wang-2022`.
+- `data/bundles/gpt2-small/` (default in the app, bundle id `gpt2-small:v2`): measured attention scores for GPT-2 Small (`openai-community/gpt2` at a pinned revision), plus the **published** IOI circuit (Wang et al., 2022: 7 roles, 26 members, 27 relations) imported from `analysis/cirqloom_analysis/published/ioi/annotations.json`. The two are kept apart: published records have status `published`, a citation and a locator, and no numbers; measured records are `experimental` attention scores from two kinds of prompts: repeated random tokens and the paper's IOI templates, each with a paired control. Neither tests an IOI role: no copying, output or causal measurement is run. Provenance lists the annotation version under `published circuit:gpt2-small:ioi:wang-2022`.
 - `data/fixtures/gpt2-small-demo/` (`?bundle=fixture`): the synthetic fixture. Zero experiments and observations; one deliberately artificial circuit (diagonal heads L*k*H*k*, `origin: "synthetic_fixture"`). The UI labels it "Demo fixture — not measured model data."
 
 ### Prompt suites
@@ -24,6 +24,8 @@ Score = mean attention over a boolean mask of cells, per prompt; the reported sc
 | `induction_attention` | `(q, q-L+1)` for second-copy rows `q = L+1 … 2L` only; never the whole `diagonal(1-L)` | `L >= 3`, from `seq = 1 + 2L` |
 
 Every observation has status `experimental`. A detector moves to `measured` only after its controls are reviewed; thresholds and `candidate` status come after that, per detector (never a shared cut-off).
+
+An observation's `method_reference` points to the source that describes the attention pattern (the induction-heads paper, the attention-sink paper, or Wang et al. for IOI positions). The detector itself (its cells, burn-in and aggregation) is Cirqloom's own definition, given in this document; the UI labels the field "Reference".
 
 ### Controls
 
@@ -71,7 +73,7 @@ Every observation has status `experimental`. A detector moves to `measured` only
 | `published` | Taken from a cited paper annotation |
 | `measured` | A score from a specified run with a validated method |
 | `candidate` | A threshold or rule suggests the behaviour; not causally confirmed |
-| `experimental` | The method is incomplete or exploratory (fixture memberships and all M1 detector scores) |
+| `experimental` | The method is incomplete or exploratory (fixture memberships and every detector score in the current bundle) |
 | `unavailable` | No reliable measurement; `score` must be `null`, never 0 |
 
 Evidence types: `heuristic_attention`, `logit_attribution`, `published_annotation`, `structural`, and `causal_intervention` (reserved; nothing emits it in V1).
@@ -86,7 +88,6 @@ Evidence types: `heuristic_attention`, `logit_attribution`, `published_annotatio
 - Edges are stored at the granularity their evidence was measured at (head → role group, group → group, head → logits); a group relation is never expanded into head pairs. Published edges need a locator in the citation and never carry a number read off a figure; edges we measure (weight composition, causal intervention) need a method and a magnitude, and causal edges list their conditions. See ADR 0004.
 - An attention asset's shape must equal `[layers, heads, seq, seq]` for its experiment, and its file size must match (checked by `validate_bundle.py`).
 
-## Planned (M2+)
+## Not measured yet
 
-- **Copy-suppression candidate:** attention and signed token-specific direct logit contribution, reported separately. L10H7 is a positive control to measure, not to hard-code.
-- **Published IOI circuit:** memberships and roles imported from Wang et al. (2022), only after checking against the primary source. Edges are included only where the paper supports them.
+Direct logit contributions (what a head writes), weight composition, copy suppression and any intervention are planned, not built; see the [roadmap](roadmap.md) and [spec](spec.md) §7.5, §7.8–7.10. Until then, nothing in a bundle says what a head outputs, and no relation is causal evidence produced by Cirqloom.

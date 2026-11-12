@@ -1,4 +1,4 @@
-"""Detector specs: what a score means and how it was made (checkpoint 7, AGENTS.md §0.3, §14).
+"""Detector specs: what a score means and how it was made (checkpoint 7, docs/spec.md §0.3, §14).
 
 A spec is the fixed description of one detector, known before any model is run. When results
 are exported (M1 Phase 3) it is combined with a HeadSummary and run details into Observations:
@@ -18,7 +18,7 @@ the defaults. Bump `version` whenever the same call could give a different numbe
 mask rule or a changed default. Docstring or error-message edits do not need a bump.
 
 Classification (candidate status, thresholds) is not part of a spec yet: thresholds must be
-benchmarked against controls per detector (AGENTS.md §7.4-7.5, §15).
+benchmarked against controls per detector (docs/spec.md §7.4-7.5, §15).
 """
 
 import inspect
@@ -34,7 +34,7 @@ from cirqloom_analysis.schema.bundle import EvidenceType
 
 Maturity = Literal["measured", "experimental"]
 """How far the method is validated. "experimental" until positive and negative controls on
-real model data pass; never upgraded by hand-picking results (AGENTS.md §7.7, §12)."""
+real model data pass; never upgraded by hand-picking results (docs/spec.md §7.7, §12)."""
 
 MaskBuilder = Callable[..., np.ndarray]
 """Called as build_mask(seq, **parameters) and returns a bool [seq, seq] mask."""

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useExplorerStore } from "./store";
 
-/** Escape clears the head selection from anywhere on the page (AGENTS.md §9). */
+/** Escape clears the head selection from anywhere on the page (docs/spec.md §9). */
 export function useEscapeToDeselect(): void {
   const select = useExplorerStore((s) => s.select);
   useEffect(() => {

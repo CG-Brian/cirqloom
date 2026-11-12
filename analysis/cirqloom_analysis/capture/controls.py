@@ -5,7 +5,7 @@ mask selects the same cells. Only whether the content repeats differs. A content
 head (induction) should drop on the control; a positional head (previous-token) should not.
 
 This module only reports numbers. It does not decide that a detector "passed": that judgement,
-and any threshold, is left to a person reading the report (AGENTS.md §12, §15).
+and any threshold, is left to a person reading the report (docs/spec.md §12, §15).
 """
 
 from dataclasses import dataclass

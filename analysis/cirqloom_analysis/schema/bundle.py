@@ -1,4 +1,4 @@
-"""Versioned bundle schema (AGENTS.md §8). Single source of truth on the Python side."""
+"""Versioned bundle schema (docs/spec.md §8). Single source of truth on the Python side."""
 
 from typing import Annotated, Literal
 

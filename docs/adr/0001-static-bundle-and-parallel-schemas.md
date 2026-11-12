@@ -6,7 +6,7 @@
 
 ## Context
 
-V1 is an offline-precomputed explorer (AGENTS.md §1, §4). Analysis runs in Python, while the explorer is a static React app that must not depend on PyTorch or a running server. Both sides need the same data contract, with runtime validation, so a malformed or fabricated value never reaches the screen. M0 has to work without model weights.
+V1 is an offline-precomputed explorer (docs/spec.md §1, §4). Analysis runs in Python, while the explorer is a static React app that must not depend on PyTorch or a running server. Both sides need the same data contract, with runtime validation, so a malformed or fabricated value never reaches the screen. M0 has to work without model weights.
 
 ## Decisions
 
@@ -35,10 +35,14 @@ Writers validate before writing, sort keys, use fixed indentation and `ensure_as
 
 ### 4. A deliberately artificial fixture
 
-The demo fixture's circuit is the diagonal L*k*H*k* with alternating roles, `origin: "synthetic_fixture"`, `evidence_status: "experimental"`, and no observations or experiments. An obviously artificial pattern cannot be mistaken for a GPT-2 finding (AGENTS.md §15). The validator requires fixture bundles to carry a display warning and forbids fixture circuits in real bundles.
+The demo fixture's circuit is the diagonal L*k*H*k* with alternating roles, `origin: "synthetic_fixture"`, `evidence_status: "experimental"`, and no observations or experiments. An obviously artificial pattern cannot be mistaken for a GPT-2 finding (docs/spec.md §15). The validator requires fixture bundles to carry a display warning and forbids fixture circuits in real bundles.
 
 ## Consequences
 
 - Every schema change touches two files plus the fixture, and the contract test makes forgetting one fail loudly.
 - The fixture exercises every UI path except measured data and attention. M1 must add tests for those using real or explicitly synthetic observations.
-- Bundles larger than the demo should not be committed; they belong in release assets (AGENTS.md §13).
+- Bundles larger than the demo should not be committed; they belong in release assets (docs/spec.md §13).
+
+## Update (M3 release)
+
+The measured GPT-2 bundle (12 MB) is committed after all, because the static demo serves it directly. [ADR 0006](0006-github-pages-deployment.md) records that decision and when to revisit it.

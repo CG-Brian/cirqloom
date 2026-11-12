@@ -1,4 +1,4 @@
-"""Detector registry: one place that lists every detector by id (checkpoint 7, AGENTS.md §14).
+"""Detector registry: one place that lists every detector by id (checkpoint 7, docs/spec.md §14).
 
 The pipeline runs "every registered detector" instead of naming detectors throughout the
 code, and an id typo fails at lookup instead of producing an Observation the frontend cannot
@@ -57,7 +57,7 @@ class DetectorRegistry:
 
 
 def default_registry() -> DetectorRegistry:
-    """A fresh registry with the M1 attention-pattern detectors (AGENTS.md §7.2-7.4)."""
+    """A fresh registry with the M1 attention-pattern detectors (docs/spec.md §7.2-7.4)."""
     registry = DetectorRegistry()
     registry.register(
         DetectorSpec(
@@ -121,7 +121,7 @@ def _ioi(id_: str, query: str, key: str, description: str) -> DetectorSpec:
     )
 
 
-# Attention between IOI positions (AGENTS.md §7.6: observations, never role verification).
+# Attention between IOI positions (docs/spec.md §7.6: observations, never role verification).
 # The paper describes these patterns for its classes; a high score here does not show that a
 # head has that role, copies anything, or affects the output.
 IOI_POSITION_DETECTORS = (

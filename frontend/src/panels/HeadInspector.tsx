@@ -12,6 +12,7 @@ import { getHeadEvidence, type HeadMembership } from "../features/overlays/selec
 import { useExplorerStore } from "../features/selection/store";
 import { AttentionPanel } from "./AttentionPanel";
 import { EdgeInspector } from "./EdgeInspector";
+import { VisitorGuide } from "./VisitorGuide";
 import {
   CollapseButton,
   EmptyNote,
@@ -67,6 +68,12 @@ function MembershipItem({ item }: { item: HeadMembership }) {
   );
 }
 
+/** The first circuit in the bundle that has relations, named for the visitor guide. */
+function relationCircuitName(view: GraphView): string | null {
+  const circuit = view.circuits.find((c) => view.edges.some((e) => e.circuit_id === c.id));
+  return circuit ? circuit.name : null;
+}
+
 function formatParameters(parameters: Record<string, number>): string | null {
   const entries = Object.entries(parameters);
   return entries.length === 0 ? null : entries.map(([k, v]) => `${k} = ${v}`).join(", ");
@@ -104,7 +111,7 @@ function ObservationRow({ obs, maskControl }: { obs: Observation; maskControl: M
       </div>
       {parameters && <div className="mt-0.5 text-[10px] text-slate-500">Settings: {parameters}</div>}
       <div className="mt-1 text-[10px] text-slate-500">
-        Method: <ExternalRef value={obs.method_reference} />
+        Reference: <ExternalRef value={obs.method_reference} />
       </div>
       {maskControl === "toggle" && (
         <button
@@ -201,6 +208,7 @@ export function HeadInspector({
         {!node || !evidence ? (
           <div className="p-3">
             <EmptyNote>Select a head in the scene or the head list to inspect it.</EmptyNote>
+            <VisitorGuide manifest={manifest} relationCircuitName={relationCircuitName(view)} />
           </div>
         ) : (
           <>
@@ -345,8 +353,9 @@ export function HeadInspector({
                   )}
                   {anyExperimental && (
                     <p className="mt-2 text-[10px] leading-snug text-slate-500">
-                      Experimental: mean attention on the detector&apos;s cells. The method has not been
-                      validated against controls yet, and a high score is not a causal role.
+                      Experimental: mean attention on the detector&apos;s cells. Paired controls are run
+                      and reported, but no pass/fail rule is applied, and a high score is not a causal
+                      role.
                     </p>
                   )}
                 </>

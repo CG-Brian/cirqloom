@@ -1,4 +1,4 @@
-"""First-token (position 0) attention mask (checkpoint 4, AGENTS.md §7.3).
+"""First-token (position 0) attention mask (checkpoint 4, docs/spec.md §7.3).
 
 Many heads dump attention on position 0 when they have nothing relevant to attend to
 (an *attention sink*). Position 0 is the only source every row can see, and its value vector
