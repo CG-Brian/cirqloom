@@ -21,7 +21,7 @@ import { TopBar } from "./TopBar";
 
 // Served from ../data (vite publicDir). The measured bundle is the default; ?bundle=fixture
 // opens the synthetic demo fixture, which the browser smoke tests use for its circuit.
-// BASE_URL is "/" in development and the Pages subpath (e.g. "/cirqloom/") in a deployed build.
+// BASE_URL is "/" in development and on Vercel, and the Pages subpath ("/cirqloom/") on GitHub Pages.
 const BASE = import.meta.env.BASE_URL;
 const BUNDLE_PATHS = {
   measured: `${BASE}bundles/gpt2-small`,

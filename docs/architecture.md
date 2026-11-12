@@ -32,7 +32,7 @@ data/bundles/gpt2-small/              manifest.json, graph.json, assets/, README
 
 ## Data flow in the app
 
-1. `StaticBundleProvider` fetches `manifest.json`, then `graph.json`, from a bundle folder under `import.meta.env.BASE_URL` (`/` locally, `/cirqloom/` on GitHub Pages; ADR 0006). Each is parsed with zod, then `crossCheckBundle` checks the two together. Failures throw typed errors (`BundleLoadError`, `BundleSchemaError`) that the app shows verbatim.
+1. `StaticBundleProvider` fetches `manifest.json`, then `graph.json`, from a bundle folder under `import.meta.env.BASE_URL` (`/` locally and on Vercel, `/cirqloom/` on GitHub Pages; ADRs 0006, 0007). Each is parsed with zod, then `crossCheckBundle` checks the two together. Failures throw typed errors (`BundleLoadError`, `BundleSchemaError`) that the app shows verbatim.
 2. `buildGraphView` indexes the bundle once: nodes sorted by (layer, head), positions from `scene/layout.ts`, and lookups for nodes, memberships and observations per head.
 3. `getActiveExperiment` picks the experiment to show (the user's pick, else the first measurement run); the inspector filters observations to it, because scores from different suites are not comparable.
 4. `App` computes the active `CircuitOverlay` once from the store's `activeCircuitId` and passes it to the scene, sidebar and status bar.
@@ -61,7 +61,7 @@ Schema rules shared by both languages: unknown keys are rejected, NaN and Infini
 
 ## Deployment
 
-`npm run build` writes a static site to `frontend/dist` (the app plus `data/` as public files). `CIRQLOOM_BASE_PATH` sets the subpath it is served under. `.github/workflows/pages.yml` builds for `/<repo>/`, runs the Playwright suite against that build, and deploys it to GitHub Pages (ADR 0006). `npm run e2e:pages` does the same build and test locally.
+`npm run build` writes a static site to `frontend/dist` (the app plus `data/` as public files). `CIRQLOOM_BASE_PATH` sets the subpath it is served under. `.github/workflows/pages.yml` builds for `/<repo>/`, runs the Playwright suite against that build, and deploys it to GitHub Pages (ADR 0006). `npm run e2e:pages` does the same build and test locally. Vercel builds the same app at the root path from `frontend/` (`frontend/vercel.json`, ADR 0007).
 
 ## Extension seams
 

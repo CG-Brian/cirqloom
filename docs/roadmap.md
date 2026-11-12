@@ -12,7 +12,7 @@ Cirqloom 1.0 is the M3 release: the published IOI circuit as an explorable 3D gr
 | M1 | GPT-2 adapter (`TransformerBridge`, pinned revision), repeated-token suites with a paired control, previous-token / first-token / induction detectors with masks, measured bundle | Done |
 | M2 | Detector masks in the bundle and an attention heatmap that outlines the scored cells | Done (per-detector 3D overlays and thresholds moved to a later step) |
 | M3 | Evidence-typed edge contract; the published IOI circuit (26 heads, 7 role groups, 27 sourced relations); role-group hubs and relation ribbons; relation inspector; IOI prompt suite with named positions and a paired control; observed attention alignment; camera focus | Done |
-| Release hardening | Public spec and roadmap, GitHub Pages deployment under a subpath, first-time visitor guide, WebGL fallback, detector top heads in the sidebar, wording review | Done in this release |
+| Release hardening | Public spec and roadmap, static deployment (Vercel at the root path, GitHub Pages under a subpath), first-time visitor guide, WebGL fallback, detector top heads in the sidebar, wording review | Done in this release |
 
 ### What the release shows, and what it does not
 
